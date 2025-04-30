@@ -1,0 +1,35 @@
+{
+    "detections": [
+        {
+            "bbox": [
+                1.63604736328125,
+                0.0,
+                635.6718139648438,
+                615.3948974609375
+            ],
+            "class": "alligator crack",
+            "conf": 0.78,
+            "width": 634.0,
+            "height": 615.4,
+            "area": 390182.4,
+            "rel_width": 99.07,
+            "rel_height": 96.16,
+            "rel_area": 95.26,
+            "color": [
+                255,
+                0,
+                0
+            ]
+        }
+    ],
+    "severity": {
+        "level": "Severe",
+        "count_score": 1,
+        "area_score": 95.26,
+        "type_score": 1
+    },
+    "image_dimensions": [
+        640,
+        640
+    ]
+}

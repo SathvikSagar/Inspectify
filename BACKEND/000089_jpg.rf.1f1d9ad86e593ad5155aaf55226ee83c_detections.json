@@ -1,0 +1,56 @@
+{
+    "detections": [
+        {
+            "bbox": [
+                0.3966064453125,
+                226.66336059570312,
+                609.3978271484375,
+                423.1292419433594
+            ],
+            "class": "pothole",
+            "conf": 0.8,
+            "width": 609.0,
+            "height": 196.5,
+            "area": 119648.0,
+            "rel_width": 95.16,
+            "rel_height": 30.7,
+            "rel_area": 29.21,
+            "color": [
+                255,
+                0,
+                0
+            ]
+        },
+        {
+            "bbox": [
+                0.983612060546875,
+                510.96453857421875,
+                110.5015869140625,
+                637.6979370117188
+            ],
+            "class": "pothole",
+            "conf": 0.66,
+            "width": 109.5,
+            "height": 126.7,
+            "area": 13879.6,
+            "rel_width": 17.11,
+            "rel_height": 19.8,
+            "rel_area": 3.39,
+            "color": [
+                255,
+                0,
+                0
+            ]
+        }
+    ],
+    "severity": {
+        "level": "High",
+        "count_score": 2,
+        "area_score": 32.6,
+        "type_score": 1
+    },
+    "image_dimensions": [
+        640,
+        640
+    ]
+}
