@@ -8,13 +8,13 @@ import Footer from './components/Footer';
 import SignupPage from './pages/SignupPage'
 import LoginPage from './pages/LoginPage';
 import AboutUs from './pages/AboutUs';
-import Upload from './components/Upload'; // Correct path
-
+import AuthorityPage from './pages/AuthorityPage'; 
+import Upload from './pages/Upload'; // Correct path
 import User from './pages/user'; // Import User page
 // import Contact from './pages/Contact';
+import Report from './pages/Report';
 import 'leaflet/dist/leaflet.css';
-
-
+import Contact from './pages/Contact';
 const HomePage = () => (
   <>
     <Hero />
@@ -37,8 +37,10 @@ const App = () => {
         {/* <Route path="/road-history" element={<RoadHistory />} /> */}
         <Route path="/signup" element={<SignupPage />} />
         <Route path="/user" element={<User />} /> {/* ✅ Add User route */}
-        <Route path="/contact" element={<Upload/>} />
-       
+        <Route path="/contact" element={<Contact/>} />
+        <Route path="/upload" element={<Upload/>} />
+        <Route path="/authority" element={<AuthorityPage />} /> 
+        <Route path="/report" element={<Report />} />
       </Routes>
     </Router>
   );

@@ -1,10 +1,8 @@
 import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import Dashboard from "../components/Dashboard";
-
 const User = () => {
   const [username, setUsername] = useState("");
-
   useEffect(() => {
     // Fetch username from localStorage, API, or context
     const storedUser = localStorage.getItem("username") || "User";

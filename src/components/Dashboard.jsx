@@ -1,6 +1,8 @@
 import { useEffect, useState, useRef } from "react";
-import { FaHome, FaCamera, FaClock, FaSave } from "react-icons/fa";
+import { FaHome, FaCamera, FaClock, FaSave, FaAddressCard, FaSign, FaSignOutAlt } from "react-icons/fa"; 
 import axios from "axios";
+import { MapContainer, TileLayer, Marker, Popup } from "react-leaflet";
+import L from "leaflet";
 import {
   BarChart,
   Bar,
@@ -180,7 +182,7 @@ const Dashboard = () => {
       {/* Sidebar */}
       <div className="w-64 bg-white p-5 shadow-lg">
         <ul>
-          {["Dashboard", "Camera", "History", "Saved"].map((tab) => (
+          {["Dashboard", "Camera", "History", "Saved","Logout"].map((tab) => (
             <li
               key={tab}
               onClick={() => {
@@ -197,6 +199,7 @@ const Dashboard = () => {
               {tab === "Camera" && <FaCamera />}
               {tab === "History" && <FaClock />}
               {tab === "Saved" && <FaSave />}
+              {tab==="Logout" && <FaSignOutAlt />}
               {tab}
             </li>
           ))}

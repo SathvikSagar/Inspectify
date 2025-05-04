@@ -1,4 +1,7 @@
 @import "tailwindcss";
+/* index.css */
+@import 'leaflet/dist/leaflet.css';
+
 body {
     overflow-x: hidden;
   }

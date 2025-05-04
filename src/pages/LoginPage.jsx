@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
-import Footer from "../components/Footer"; // ✅ Import Footer
+import Footer from "../components/Footer";
 import Get from "../components/Get";
 
 const LoginPage = () => {
@@ -13,6 +13,13 @@ const LoginPage = () => {
     e.preventDefault();
     setErrorMessage(""); // Clear previous errors
 
+    // ✅ Check for authority login before hitting backend
+    if (email === "AUTH123@gmail.com" && password === "AUTH1234567890") {
+      localStorage.setItem("user", JSON.stringify({ email }));
+      navigate("/authority"); // ✅ Redirect to Authority page
+      return;
+    }
+
     try {
       const response = await fetch("http://localhost:5000/api/login", {
         method: "POST",
@@ -23,9 +30,8 @@ const LoginPage = () => {
       const data = await response.json();
 
       if (response.ok) {
-        localStorage.setItem("user", JSON.stringify({ email })); // Store user data
-        // alert("Login Successful!");
-        navigate("/user"); // Redirect to User page
+        localStorage.setItem("user", JSON.stringify({ email }));
+        navigate("/user"); // ✅ Redirect to User page
       } else {
         setErrorMessage(data.error || "Invalid credentials. Please try again.");
       }
@@ -71,42 +77,37 @@ const LoginPage = () => {
                 />
               </div>
 
-              {/* Display error messages */}
               {errorMessage && (
                 <p className="text-sm text-red-600">{errorMessage}</p>
               )}
 
-              <button
-                type="submit"
- 
-              >
-                <Get>Login </Get>
+              <button type="submit">
+                <Get>Login</Get>
               </button>
             </form>
 
             <p className="text-sm text-gray-500 mt-6">
-  Don’t have an account?{" "}
-  <span
-    className="text-indigo-600 cursor-pointer hover:underline"
-    onClick={() => navigate("/signup")} // ✅ Navigate to SignupPage
-  >
-    Sign Up
-  </span>
-</p>
-
+              Don’t have an account?{" "}
+              <span
+                className="text-indigo-600 cursor-pointer hover:underline"
+                onClick={() => navigate("/signup")}
+              >
+                Sign Up
+              </span>
+            </p>
           </div>
 
           {/* Right: Login Illustration */}
           <div className="hidden md:flex w-1/2 bg-indigo-100 items-center justify-center p-6">
             <img
-              src="/lag.svg" // ✅ Ensure this file is in public/ or use import if in src/
+              src="/lag.svg"
               alt="Login Illustration"
               className="w-3/4 h-auto"
             />
           </div>
         </div>
       </div>
-      <Footer /> {/* ✅ Footer included properly */}
+      <Footer />
     </div>
   );
 };

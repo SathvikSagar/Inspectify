@@ -1,24 +1,12 @@
-# Logs
-logs
-*.log
-npm-debug.log*
-yarn-debug.log*
-yarn-error.log*
-pnpm-debug.log*
-lerna-debug.log*
+ *.pth
+*.pt
+*.h5
+*.ckpt
+*.zip
+*.tar.gz
+__pycache__/
+.ipynb_checkpoints/
+node_modules/
+.env
+drive/
 
-node_modules
-dist
-dist-ssr
-*.local
-
-# Editor directories and files
-.vscode/*
-!.vscode/extensions.json
-.idea
-.DS_Store
-*.suo
-*.ntvs*
-*.njsproj
-*.sln
-*.sw?
