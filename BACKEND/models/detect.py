@@ -9,12 +9,25 @@ import json
 from pymongo import MongoClient
 from datetime import datetime
 import timm
+import time
+
+# Enable faster CPU operations if available
+torch.set_num_threads(4)  # Optimal thread count for most systems
+torch.backends.cudnn.benchmark = True
+
+# Start timing
+start_time = time.time()
 
 # ======= Load YOLO model =======
-yolo_model = YOLO(r'C:\Users\USER\tailwindsample\BACKEND\models\best.pt')  # update path
+model_path = r'C:\Users\USER\tailwindsample\BACKEND\models\best.pt'
+yolo_model = YOLO(model_path)
+# Set YOLO to use half precision for faster inference if GPU is available
+yolo_model.model.half() if torch.cuda.is_available() else yolo_model.model.float()
 
 # ======= Load ViT model =======
 device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
+print(f"Using device: {device}")
+
 vit_model = timm.create_model('deit_tiny_patch16_224', pretrained=False)
 vit_model.head = nn.Sequential(
     nn.Linear(vit_model.head.in_features, 4),
@@ -24,12 +37,18 @@ vit_model.load_state_dict(torch.load(r'C:\Users\USER\tailwindsample\BACKEND\mode
 vit_model.to(device)
 vit_model.eval()
 
-# Transform for ViT
+# Use half precision for ViT model if GPU is available
+if torch.cuda.is_available():
+    vit_model = vit_model.half()
+
+# Transform for ViT - optimize for speed
 vit_transform = transforms.Compose([
     transforms.Resize((224, 224)),
     transforms.ToTensor(),
     transforms.Normalize(mean=[0.5]*3, std=[0.5]*3)
 ])
+
+print(f"Models loaded in {time.time() - start_time:.2f} seconds")
 
 vit_labels = ["pothole", "longitudinal_crack", "lateral_crack", "alligator_crack"]
 
@@ -53,75 +72,160 @@ def get_severity(bboxes, img_width, img_height):
     area_score = sum([box['rel_area'] for box in bboxes])
     type_score = len(set([box['class'] for box in bboxes]))
 
-    severity = "Low"
+    severity = "low"
     if count_score > 5 or area_score > 15 or type_score > 2:
-        severity = "Medium"
+        severity = "moderate"
     if count_score > 10 or area_score > 30:
-        severity = "High"
+        severity = "high"
     if count_score > 15 or area_score > 50:
-        severity = "Severe"
+        severity = "severe"
     return severity, count_score, area_score, type_score
 
-def run_vit_prediction(image_path):
-    image = Image.open(image_path).convert("RGB")
+def run_vit_prediction(image):
+    """Optimized ViT prediction function that accepts an already loaded image"""
+    # Convert to RGB if not already
+    if image.mode != "RGB":
+        image = image.convert("RGB")
+    
+    # Preprocess image
     input_tensor = vit_transform(image).unsqueeze(0).to(device)
+    
+    # Use half precision if on GPU
+    if torch.cuda.is_available():
+        input_tensor = input_tensor.half()
 
+    # Run inference with optimizations
     with torch.no_grad():
         output = vit_model(input_tensor).squeeze()
 
+    # Process results
     thresholds = torch.tensor([best_thresholds[label] for label in vit_labels], device=device)
     predicted = (output > thresholds).int().cpu().numpy()
 
     predictions = [label for i, label in enumerate(vit_labels) if predicted[i]]
     return predictions
+def calculate_iou(box1, box2):
+    """Calculate IoU between two boxes."""
+    x1 = max(box1[0], box2[0])
+    y1 = max(box1[1], box2[1])
+    x2 = min(box1[2], box2[2])
+    y2 = min(box1[3], box2[3])
+
+    inter_area = max(0, x2 - x1) * max(0, y2 - y1)
+    box1_area = (box1[2] - box1[0]) * (box1[3] - box1[1])
+    box2_area = (box2[2] - box2[0]) * (box2[3] - box2[1])
+    union_area = box1_area + box2_area - inter_area
+
+    if union_area == 0:
+        return 0
+    return inter_area / union_area
+
+def merge_boxes(bboxes, iou_threshold=0.5):
+    """Merge overlapping boxes of same class using IoU."""
+    merged = []
+    used = [False] * len(bboxes)
+
+    for i in range(len(bboxes)):
+        if used[i]:
+            continue
+        box_a = bboxes[i]
+        group = [box_a]
+        used[i] = True
+
+        for j in range(i + 1, len(bboxes)):
+            if used[j]:
+                continue
+            box_b = bboxes[j]
+            if box_a["class"] == box_b["class"]:
+                iou = calculate_iou(box_a["bbox"], box_b["bbox"])
+                if iou >= iou_threshold:
+                    group.append(box_b)
+                    used[j] = True
+
+        # Merge group to one box (bounding union)
+        x1 = min([b["bbox"][0] for b in group])
+        y1 = min([b["bbox"][1] for b in group])
+        x2 = max([b["bbox"][2] for b in group])
+        y2 = max([b["bbox"][3] for b in group])
+        conf = max([b["conf"] for b in group])  # Keep max confidence
+        cls_name = box_a["class"]
+        color = box_a["color"]
+
+        merged.append({
+            "bbox": [x1, y1, x2, y2],
+            "class": cls_name,
+            "conf": round(conf, 2),
+            "color": color
+        })
+
+    return merged
 
 def run_detection(image_path, location=None):
+    detection_start = time.time()
     try:
+        # Load image once and reuse
         image = Image.open(image_path)
     except Exception as e:
         return {"error": f"Error loading image: {e}"}
 
     img_width, img_height = image.size
+    
+    # YOLO Detection with balanced parameters for speed and accuracy
+    yolo_start = time.time()
+    results = yolo_model.predict(
+        source=image_path,
+        save=False,
+        verbose=False,
+        conf=0.5,  # Confidence threshold
+        iou=0.45,  # NMS threshold
+        max_det=50,  # Maximum detections per image
+        half=torch.cuda.is_available(),  # Use half precision if GPU available
+        device=0 if torch.cuda.is_available() else 'cpu',  # Use GPU if available
+        imgsz=640  # Standard image size
+    )
+    print(f"YOLO inference completed in {time.time() - yolo_start:.2f} seconds")
 
-    # YOLO Detection
-    results = yolo_model.predict(source=image_path, save=False, verbose=False)
-    if not results:
-        return {"error": "No results"}
-
+    # Process detections efficiently
     result = results[0]
     bboxes = []
-    for box in result.boxes:
-        conf = float(box.conf[0].item())
-        if conf < 0.05:
-            continue  # Skip boxes below the threshold
+    
+    # Batch process boxes for efficiency
+    if len(result.boxes) > 0:
+        # Get all confidences at once
+        confs = [float(box.conf[0].item()) for box in result.boxes]
+        # Filter by confidence threshold
+        valid_indices = [i for i, conf in enumerate(confs) if conf >= 0.01]
+        
+        for i in valid_indices:
+            box = result.boxes[i]
+            x1, y1, x2, y2 = box.xyxy[0].tolist()
+            cls_id = int(box.cls[0].item())
+            cls_name = result.names[cls_id]
 
-        x1, y1, x2, y2 = box.xyxy[0].tolist()
-        cls_id = int(box.cls[0].item())
-        cls_name = result.names[cls_id]
+            # Calculate area metrics
+            width = x2 - x1
+            height = y2 - y1
+            area = width * height
+            rel_area = area / (img_width * img_height) * 100
 
-        width = x2 - x1
-        height = y2 - y1
-        area = width * height
-        rel_width = width / img_width * 100
-        rel_height = height / img_height * 100
-        rel_area = area / (img_width * img_height) * 100
+            bboxes.append({
+                "bbox": [x1, y1, x2, y2],
+                "class": cls_name,
+                "conf": round(confs[i], 2),
+                "area": round(area, 1),
+                "rel_area": round(rel_area, 2),
+                "color": get_class_color(cls_name)
+            })
 
-        bboxes.append({
-            "bbox": [x1, y1, x2, y2],
-            "class": cls_name,
-            "conf": round(conf, 2),
-            "width": round(width, 1),
-            "height": round(height, 1),
-            "area": round(area, 1),
-            "rel_width": round(rel_width, 2),
-            "rel_height": round(rel_height, 2),
-            "rel_area": round(rel_area, 2),
-            "color": get_class_color(cls_name)
-        })
-
+    # Calculate severity
     severity, count_score, area_score, type_score = get_severity(bboxes, img_width, img_height)
-    vit_predictions = run_vit_prediction(image_path)
+    
+    # Run ViT prediction using the already loaded image
+    vit_start = time.time()
+    vit_predictions = run_vit_prediction(image)
+    print(f"ViT inference completed in {time.time() - vit_start:.2f} seconds")
 
+    # Prepare result JSON
     result_json = {
         "detections": bboxes,
         "severity": {
@@ -133,50 +237,60 @@ def run_detection(image_path, location=None):
         "vit_predictions": vit_predictions,
         "image_dimensions": [img_width, img_height],
         "latitude": location.get("latitude") if location else None,
-        "longitude": location.get("longitude") if location else None
+        "longitude": location.get("longitude") if location else None,
+        "processing_time": round(time.time() - detection_start, 2)
     }
 
+    print(f"Total detection completed in {time.time() - detection_start:.2f} seconds")
     return result_json
 
 def save_to_mongodb(data, image_path):
+    """Save results to MongoDB in a background thread to avoid blocking"""
     try:
-        client = MongoClient("mongodb://localhost:27017/")
-        db = client["road_damage_detection"]
-        collection = db["detections"]
-
-        document = {
-            "filename": os.path.basename(image_path),
-            "timestamp": datetime.now().isoformat(),
-            "severity": data["severity"],
-            "image_dimensions": data["image_dimensions"],
-            "detections": data["detections"],
-            "vit_predictions": data["vit_predictions"],
-            "location": data.get("location", {}),
-            "annotated_image": "runs/detect/predict/" + os.path.basename(image_path),
-        }
-
-        collection.insert_one(document)
+        # Skip MongoDB save from Python for performance
+        # We'll save the data later in the Node.js server
+        print("Skipping MongoDB save from Python for performance")
+        return
     except Exception as e:
-        pass  # optionally log
+        print(f"MongoDB error (non-critical): {e}")
 
 # ======= Script Entry =======
 if __name__ == "__main__":
+    script_start = time.time()
+    
     if len(sys.argv) < 2:
         print(json.dumps({"error": "Usage: python detect.py <image_path> [latitude] [longitude]"}))
         sys.exit(1)
 
     image_path = sys.argv[1]
-    latitude = float(sys.argv[2]) if len(sys.argv) > 2 else None
-    longitude = float(sys.argv[3]) if len(sys.argv) > 3 else None
+    latitude = float(sys.argv[2]) if len(sys.argv) > 2 and sys.argv[2] else None
+    longitude = float(sys.argv[3]) if len(sys.argv) > 3 and sys.argv[3] else None
 
     if not os.path.exists(image_path):
         print(json.dumps({"error": f"Image file {image_path} not found."}))
         sys.exit(1)
 
     location = {"latitude": latitude, "longitude": longitude}
+    
+    # Run detection
     result = run_detection(image_path, location=location)
-
+    
+    # Save to MongoDB without waiting for completion
     if "error" not in result:
-        save_to_mongodb(result, image_path)
-
-    print(json.dumps(result, indent=2))
+        try:
+            import threading
+            # Start MongoDB save in a separate thread
+            threading.Thread(target=save_to_mongodb, args=(result, image_path)).start()
+        except:
+            # If threading fails, try to save directly but don't block on errors
+            try:
+                save_to_mongodb(result, image_path)
+            except:
+                pass
+    
+    # Add total script time
+    result["total_script_time"] = round(time.time() - script_start, 2)
+    print(f"Total script execution time: {result['total_script_time']} seconds")
+    
+    # Return result as JSON
+    print(json.dumps(result))

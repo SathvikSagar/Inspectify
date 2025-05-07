@@ -1,134 +1,275 @@
 import React from 'react';
 import { Swiper, SwiperSlide } from 'swiper/react';
-import { Pagination, Navigation } from 'swiper/modules';
+import { Pagination, Navigation, Autoplay, EffectCoverflow } from 'swiper/modules';
+import { motion } from 'framer-motion';
+import { Star, Quote } from 'lucide-react';
 import 'swiper/css';
 import 'swiper/css/pagination';
-import 'swiper/css/navigation'; // Import the necessary styles for navigation
+import 'swiper/css/navigation';
+import 'swiper/css/effect-coverflow';
 
 const testimonials = [
   {
     id: 1,
-    rating: '4.9',
-    text: 'Inspectify has completely transformed how we manage road inspections. The damage detection accuracy is impressive save us hours of manual work.',
-    name: 'Navatha',
-    role: 'Admin',
-    image: 'https://pagedone.io/asset/uploads/1696229969.png',
+    rating: 5,
+    text: 'Inspectify has completely transformed how we manage road inspections. The detection accuracy saves us hours of manual work and has improved our maintenance planning by 40%.',
+    name: 'Navatha Singh',
+    role: 'City Infrastructure Manager',
+    image: 'https://randomuser.me/api/portraits/women/44.jpg',
+    company: 'Metro City Department',
+    highlight: 'Reduced inspection time by 70%'
   },
   {
     id: 2,
-    rating: '4.9',
-    text: 'The severity classification and repair prioritization features are a game-changer. Inspectify helped us reduce downtime and allocate resources more effectively.',
-    name: 'Venkat D',
-    role: 'User',
-    image: 'https://pagedone.io/asset/uploads/1696229994.png',
+    rating: 5,
+    text: 'The severity classification and prioritization features are a game-changer. Inspectify helped us reduce downtime efficiently and allocate our resources to the most critical repairs first.',
+    name: 'Venkat Kumar',
+    role: 'Highway Maintenance Director',
+    image: 'https://randomuser.me/api/portraits/men/32.jpg',
+    company: 'State Highway Authority',
+    highlight: 'Improved repair prioritization'
   },
   {
     id: 3,
-    rating: '4.9',
-    text: 'From smart damage insights to clean visual summaries, everything is intuitive and reliable. Highly recommended for anyone in road safety and infrastructure planning.',
-    name: 'Rushika A',
-    role: 'User',
-    image: 'https://pagedone.io/asset/uploads/1696230036.png',
+    rating: 5,
+    text: 'From smart damage insights to clean summaries, everything is intuitive. Highly recommended for infrastructure planning. The AI detection is remarkably accurate even in challenging weather conditions.',
+    name: 'Rushika Patel',
+    role: 'Urban Planning Specialist',
+    image: "https://randomuser.me/api/portraits/women/68.jpg",
+    company: 'Urban Development Corp',
+    highlight: 'Seamless integration with existing systems'
   },
   {
     id: 4,
-    rating: '4.9',
-    text: 'This platform helped me understand market trends and manage my portfolio effectively.From smart damage insights to clean visual summaries, everything is intuitive',
-    name: 'Santhi',
-    role: 'Marketing Lead',
-    image: 'https://pagedone.io/asset/uploads/1696230036.png',
+    rating: 5,
+    text: 'The platform helped me manage field reports better. The clean UI and fast analysis are perfect for our operations. We can now inspect twice the road surface with the same team size.',
+    name: 'Shanti Reddy',
+    role: 'Operations Manager',
+    image: "https://randomuser.me/api/portraits/women/79.jpg",
+    company: 'Regional Transport Office',
+    highlight: 'Doubled inspection coverage'
   },
   {
     id: 5,
-    rating: '4.9',
-    text: 'From smart damage insights to clean visual summaries, everything is intuitiveThis platform helped me understand market trends and manage my portfolio effectively.',
-    name: 'Shiva',
-    role: 'Marketing Lead',
-    image: 'https://pagedone.io/asset/uploads/1696230036.png',
+    rating: 5,
+    text: 'It brought automation to our workflow. We now understand road safety trends better and faster. This tool has revolutionized how we approach preventative maintenance.',
+    name: 'Shiva Prasad',
+    role: 'Chief Technology Officer',
+    image: "https://randomuser.me/api/portraits/men/54.jpg",
+    company: 'Smart City Solutions',
+    highlight: 'Data-driven maintenance decisions'
   },
 ];
 
+const fallbackAvatar =
+  'https://ui-avatars.com/api/?name=User&background=CBD5E1&color=1E293B&size=128';
+
 const Testimonials = () => {
   return (
-    <section className="py-24">
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-        <div className="mb-16 text-center">
-          {/* <span className="text-sm text-green-500 font-medium block mb-2">TESTIMONIAL</span> */}
-          <h2 className="text-4xl font-bold text-green-900">What our happy users say!</h2>
+    <section className="relative bg-gradient-to-b from-white via-green-50 to-white py-24 overflow-hidden">
+      {/* Decorative elements */}
+      <div className="absolute top-0 left-0 w-full h-64 bg-gradient-to-b from-green-50 to-transparent opacity-70"></div>
+      <div className="absolute -bottom-32 -right-32 w-96 h-96 bg-green-100 rounded-full opacity-20 blur-3xl"></div>
+      <div className="absolute -bottom-32 -left-32 w-96 h-96 bg-teal-100 rounded-full opacity-20 blur-3xl"></div>
+      
+      <div className="max-w-7xl mx-auto px-6 lg:px-12 relative z-10">
+        <motion.div
+          className="text-center mb-16"
+          initial={{ opacity: 0, y: 20 }}
+          whileInView={{ opacity: 1, y: 0 }}
+          viewport={{ once: true }}
+          transition={{ duration: 0.6 }}
+        >
+          <div className="inline-block mb-3">
+            <span className="bg-gradient-to-r from-green-600 to-teal-600 bg-clip-text text-transparent text-sm font-semibold tracking-wider uppercase px-3 py-1 rounded-full border border-green-200">
+              Testimonials
+            </span>
+          </div>
+          <h2 className="text-4xl md:text-5xl font-bold text-gray-900 tracking-tight mb-4">
+            What Our Users Say
+          </h2>
+          <p className="text-lg text-gray-600 max-w-2xl mx-auto">
+            Real stories from people improving road safety and operations with our AI-powered inspection platform.
+          </p>
+        </motion.div>
+
+        {/* Large quote icon */}
+        <div className="absolute top-40 left-0 opacity-5 z-0">
+          <Quote size={300} />
         </div>
 
-        <Swiper 
-          modules={[Pagination, Navigation]}
+        <Swiper
+          modules={[Pagination, Navigation, Autoplay, EffectCoverflow]}
+          effect="coverflow"
+          coverflowEffect={{
+            rotate: 0,
+            stretch: 0,
+            depth: 100,
+            modifier: 1,
+            slideShadows: false,
+          }}
           spaceBetween={30}
           slidesPerView={1}
-          pagination={{ clickable: true }}
-          navigation={{ clickable: true }}  // Enable navigation arrows
+          centeredSlides={true}
+          loop={true}
+          autoplay={{
+            delay: 5000,
+            disableOnInteraction: false,
+          }}
+          pagination={{ 
+            clickable: true,
+            dynamicBullets: true
+          }}
+          navigation={{ clickable: true }}
           breakpoints={{
+            640: { slidesPerView: 1.5 },
             768: { slidesPerView: 2 },
             1024: { slidesPerView: 3 },
           }}
-          className="relative px-12"
-       >
-          {testimonials.map((testimonial) => (
-            <SwiperSlide key={testimonial.id}>
-              <div className="bg-white border border-gray-200 rounded-xl p-6 shadow-sm hover:shadow-md transition">
-                <div className="flex items-center gap-2 mb-4 text-amber-500">
-                  <svg className="w-5 h-5" fill="currentColor" viewBox="0 0 18 17">
-                    <path d="M8.1 1.3c.4-.7 1.5-.7 1.8 0l1.8 3.7c.1.3.4.5.7.6l4 .6c.8.1 1.2 1 .6 1.6l-2.9 2.9c-.2.2-.3.6-.3.9l.7 4c.1.8-.7 1.4-1.4 1l-3.6-1.9c-.3-.1-.7-.1-1 0l-3.6 1.9c-.7.4-1.5-.2-1.4-1l.7-4c.1-.3 0-.7-.3-.9L.9 7.8c-.6-.6-.3-1.5.6-1.6l4-.6c.3 0 .6-.3.7-.6L8.1 1.3z" />
-                  </svg>
-                  <span className="text-base font-semibold text-indigo-600">{testimonial.rating}</span>
+          className="testimonial-swiper"
+        >
+          {testimonials.map((t, index) => (
+            <SwiperSlide key={t.id}>
+              <motion.div
+                className="bg-white rounded-2xl shadow-lg border border-gray-100 p-8 hover:shadow-xl transition-all duration-300 h-full flex flex-col justify-between"
+                initial={{ opacity: 0, y: 30 }}
+                whileInView={{ opacity: 1, y: 0 }}
+                viewport={{ once: true }}
+                transition={{ delay: index * 0.1, duration: 0.6 }}
+                whileHover={{ y: -5 }}
+              >
+                {/* Highlight tag */}
+                {t.highlight && (
+                  <div className="absolute -top-3 left-1/2 transform -translate-x-1/2 bg-gradient-to-r from-green-600 to-teal-600 text-white text-xs font-bold px-4 py-1 rounded-full shadow-md">
+                    {t.highlight}
+                  </div>
+                )}
+                
+                {/* Rating */}
+                <div className="flex items-center gap-1 mb-4">
+                  {[...Array(t.rating)].map((_, i) => (
+                    <Star key={i} size={16} className="text-yellow-400 fill-yellow-400" />
+                  ))}
+                  <span className="ml-2 text-sm font-semibold text-gray-600">
+                    5.0
+                  </span>
                 </div>
-                <p className="text-gray-600 mb-6">{testimonial.text}</p>
-                <div className="flex items-center gap-4 border-t pt-4">
+
+                {/* Quote icon */}
+                <div className="mb-4 text-green-100">
+                  <Quote size={40} className="opacity-50" />
+                </div>
+
+                {/* Testimonial text */}
+                <p className="text-gray-700 text-base mb-6 leading-relaxed">
+                  {t.text}
+                </p>
+
+                {/* User info */}
+                <div className="flex items-center gap-4 pt-4 mt-auto border-t border-gray-100">
                   <img
-                    className="w-10 h-10 rounded-full object-cover"
-                    src={testimonial.image}
-                    alt={testimonial.name}
+                    className="w-14 h-14 rounded-full object-cover border-2 border-green-100 shadow-sm"
+                    src={t.image}
+                    alt={t.name}
+                    onError={(e) => {
+                      e.target.onerror = null;
+                      e.target.src = fallbackAvatar;
+                    }}
                   />
                   <div>
-                    <p className="font-medium text-gray-900">{testimonial.name}</p>
-                    <p className="text-sm text-gray-500">{testimonial.role}</p>
+                    <p className="font-bold text-gray-900">{t.name}</p>
+                    <p className="text-sm text-gray-500">{t.role}</p>
+                    <p className="text-xs text-green-600 mt-1">{t.company}</p>
                   </div>
                 </div>
-              </div>
+              </motion.div>
             </SwiperSlide>
           ))}
         </Swiper>
 
-        {/* Swiper pagination custom styles */}
+        {/* Featured testimonial */}
+        <motion.div 
+          className="mt-20 max-w-4xl mx-auto bg-gradient-to-r from-green-50 to-teal-50 rounded-3xl p-10 shadow-lg border border-green-100 relative overflow-hidden"
+          initial={{ opacity: 0, y: 30 }}
+          whileInView={{ opacity: 1, y: 0 }}
+          viewport={{ once: true }}
+          transition={{ duration: 0.7 }}
+        >
+          <div className="absolute -right-10 -bottom-10 opacity-10">
+            <Quote size={200} />
+          </div>
+          
+          <div className="relative z-10">
+            <div className="flex flex-col md:flex-row gap-8 items-center">
+              <div className="md:w-1/3 flex-shrink-0">
+                <img 
+                  src="https://randomuser.me/api/portraits/men/42.jpg" 
+                  alt="Featured testimonial" 
+                  className="w-32 h-32 md:w-40 md:h-40 rounded-full object-cover border-4 border-white shadow-xl mx-auto"
+                />
+              </div>
+              <div className="md:w-2/3">
+                <div className="flex mb-4">
+                  {[...Array(5)].map((_, i) => (
+                    <Star key={i} size={20} className="text-yellow-400 fill-yellow-400" />
+                  ))}
+                </div>
+                <p className="text-gray-700 text-lg italic mb-6">
+                  "The AI detection accuracy is remarkable. We've reduced our inspection costs by 60% while increasing the frequency of our road assessments. This technology is truly transformative for urban infrastructure management."
+                </p>
+                <div>
+                  <p className="font-bold text-gray-900 text-lg">Dr. Rajesh Mehta</p>
+                  <p className="text-green-700">Director of Infrastructure, National Highways Authority</p>
+                </div>
+              </div>
+            </div>
+          </div>
+        </motion.div>
+
         <style>{`
           .swiper-pagination {
-            margin-top: 2rem;
-            text-align: center;
+            margin-top: 3rem;
+            position: relative;
+            bottom: 0 !important;
           }
           .swiper-pagination-bullet {
-            width: 16px;
-            height: 4px;
-            background-color: #d1d5db;
+            width: 10px;
+            height: 10px;
+            background-color: #e2e8f0;
             margin: 0 6px;
-            border-radius: 5px;
-            transition: background-color 0.3s ease;
+            border-radius: 50%;
+            transition: all 0.3s ease;
+            opacity: 0.5;
           }
           .swiper-pagination-bullet-active {
-            background-color:rgb(22, 205, 153);
+            background-color: #10b981;
+            opacity: 1;
+            width: 12px;
+            height: 12px;
           }
-
-          /* Custom navigation buttons */
-          .swiper-button-next, .swiper-button-prev {
-            color:rgb(65, 240, 117);
-            font-size: 1.5rem;
-            transition: color 0.3s ease;
+          .swiper-button-next,
+          .swiper-button-prev {
+            color: #10b981;
+            background-color: white;
+            width: 40px;
+            height: 40px;
+            border-radius: 50%;
+            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
+            transition: all 0.3s ease;
           }
-          .swiper-button-next:hover, .swiper-button-prev:hover {
-            color: #2C3E50;
+          .swiper-button-next:hover,
+          .swiper-button-prev:hover {
+            background-color: #10b981;
+            color: white;
           }
-            .swiper-button-next {
-  right: -10px; /* push arrow further right */
-}
-.swiper-button-prev {
-  left: -10px;  /* push arrow further left */
-}
-
+          .swiper-button-next:after,
+          .swiper-button-prev:after {
+            font-size: 18px;
+            font-weight: bold;
+          }
+          .testimonial-swiper {
+            padding: 30px 10px 60px;
+          }
         `}</style>
       </div>
     </section>

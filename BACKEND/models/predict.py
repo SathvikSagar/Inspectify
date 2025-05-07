@@ -47,7 +47,14 @@ def predict_image(image_path):
     image = transform(image).unsqueeze(0).to(device)  # Preprocess
     with torch.no_grad():
         output = model(image)
-    prediction = "Not a Road" if output.item() < 0.5 else "Road"
+    
+    # Lower the threshold to make the model more likely to classify as a road
+    # Original threshold was 0.5, now using 0.3
+    confidence = output.item()
+    prediction = "Not a Road" if confidence < 0.3 else "Road"
+    
+    # Print confidence for debugging
+    print(f"{prediction} (confidence: {confidence:.4f})")
     return prediction
 
 # 🔹 Run the script with command-line input
