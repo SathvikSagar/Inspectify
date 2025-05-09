@@ -42,9 +42,11 @@ const Sidebar = ({ activeTab, userName, userId }) => {
     const navItem = navItems.find(item => item.name === tab);
     
     if (tab === "Logout") {
-      // Clear user-specific data
+      // Clear all user-specific data
       localStorage.removeItem("roadVisionUserId");
       localStorage.removeItem("roadVisionUserName");
+      localStorage.removeItem("roadVisionUserType");
+      localStorage.removeItem("roadVisionIsAdmin");
       localStorage.removeItem("user");
       
       // Always navigate to login page on logout
@@ -56,14 +58,15 @@ const Sidebar = ({ activeTab, userName, userId }) => {
     if (navItem) {
       // Check if user is trying to access admin pages
       const isAdminPage = ["/admin", "/authority", "/map", "/report", "/view"].includes(navItem.path);
+      const isUserPage = ["/user", "/camera", "/history"].includes(navItem.path);
       
       if (isAdminPage && !isAdmin) {
         // If a regular user tries to access admin pages, redirect to user dashboard
         console.log("Regular user attempting to access admin page, redirecting to user dashboard");
         navigate("/user");
-      } else if (!isAdminPage && isAdmin && navItem.path === "/user") {
-        // If an admin tries to access user dashboard, redirect to admin dashboard
-        console.log("Admin attempting to access user dashboard, redirecting to admin dashboard");
+      } else if (isUserPage && isAdmin) {
+        // If an admin tries to access user pages, redirect to admin dashboard
+        console.log("Admin attempting to access user page, redirecting to admin dashboard");
         navigate("/admin");
       } else {
         // Normal navigation

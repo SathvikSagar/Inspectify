@@ -3,6 +3,7 @@ import { BrowserRouter as Router, Routes, Route } from "react-router-dom";
 import { ToastContainer, toast } from "react-toastify";
 import "react-toastify/dist/ReactToastify.css";
 import { io } from "socket.io-client";
+import Demo from "./pages/Demo"; 
 import  Admin from "./pages/Admin";
 import Navbar from './components/Navbar';
 import Hero from './components/Hero';
@@ -63,6 +64,7 @@ const App = () => {
         <Route path="/admin" element={<Admin />} />
         <Route path="/view" element={<ViewFeed />} />
         <Route path="/map" element={<MapView />} />
+        <Route path="/demo" element={<Demo />} />
       </Routes>
 
       {/* ToastContainer for displaying notifications */}

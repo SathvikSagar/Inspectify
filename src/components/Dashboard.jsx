@@ -1,17 +1,15 @@
 import { useEffect, useState, useRef } from "react";
 import { FaHome, FaCamera, FaClock, FaSave, FaAddressCard, FaSign, FaSignOutAlt } from "react-icons/fa"; 
-import { Bell, AlertTriangle, CheckCircle, Clock, X, Camera, MapPin, FileText, Search } from "lucide-react";
+import { Bell, AlertTriangle, AlertCircle, CheckCircle, Clock, X, Camera, MapPin, FileText, Search, RefreshCw, PieChart as PieChartIcon } from "lucide-react";
 import axios from "axios";
 import UserLocationMap from "../components/UserLocationMap";  
 import { useNavigate } from "react-router-dom";
 import { MapContainer, TileLayer, Marker, Popup } from "react-leaflet";
 import L from "leaflet";
 import {
-  BarChart,
-  Bar,
-  XAxis,
-  YAxis,
-  CartesianGrid,
+  PieChart,
+  Pie,
+  Cell,
   Tooltip,
   Legend,
   ResponsiveContainer,
@@ -33,29 +31,136 @@ const Dashboard = () => {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
   
+  // Loading states
+  const [statsLoading, setStatsLoading] = useState(false);
+  
+  // Verify user authentication with the server
+  const verifyAuthentication = async (userId) => {
+    try {
+      // First check locally if this is an admin user by ID prefix or stored value
+      const isAdminByPrefix = userId.startsWith('admin_');
+      const storedIsAdmin = localStorage.getItem('roadVisionIsAdmin') === 'true';
+      
+      // If it's an admin by prefix or stored value, don't continue with verification in user dashboard
+      if (isAdminByPrefix || storedIsAdmin) {
+        console.log("Admin user detected in Dashboard component verification");
+        // Store this information but don't redirect - let the useEffect handle it
+        return false;
+      }
+      
+      // For non-admin users, verify with the server
+      const response = await fetch('http://localhost:5000/api/verify-auth', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ userId })
+      });
+      
+      const data = await response.json();
+      console.log("Authentication verification response:", data);
+      
+      if (response.ok && data.authenticated) {
+        // Update user name if provided
+        if (data.name && data.name !== userName) {
+          setUserName(data.name);
+          localStorage.setItem('roadVisionUserName', data.name);
+        }
+        
+        // Store user type and admin status in localStorage for consistency
+        if (data.userType) {
+          localStorage.setItem('roadVisionUserType', data.userType);
+        }
+        
+        // Update admin status
+        localStorage.setItem('roadVisionIsAdmin', data.isAdmin ? 'true' : 'false');
+        
+        // If server says this is an admin user but they're on the user dashboard, let useEffect handle redirect
+        if (data.isAdmin || data.userType === 'admin') {
+          console.log("Server identified user as admin, will redirect in useEffect");
+          return false;
+        }
+        
+        return true; // Authentication successful for regular user
+      } else {
+        // Authentication failed, redirect to login
+        console.log("Authentication failed:", data.message);
+        localStorage.removeItem('roadVisionUserId');
+        localStorage.removeItem('roadVisionUserName');
+        localStorage.removeItem('roadVisionUserType');
+        localStorage.removeItem('roadVisionIsAdmin');
+        navigate('/');
+        return false;
+      }
+    } catch (error) {
+      console.error("Error verifying authentication:", error);
+      // On error, we'll keep the user logged in but log the error
+      return true;
+    }
+  };
+
   // Get user info from localStorage on component mount
   useEffect(() => {
     const storedUserId = localStorage.getItem('roadVisionUserId');
     const storedUserName = localStorage.getItem('roadVisionUserName');
+    const storedUserType = localStorage.getItem('roadVisionUserType');
+    const storedIsAdmin = localStorage.getItem('roadVisionIsAdmin');
     
-    if (storedUserId) {
-      setUserId(storedUserId);
-      
-      // Check if user is admin and redirect if needed
-      const isAdmin = storedUserId.startsWith('admin_');
-      if (isAdmin) {
-        console.log("Admin user detected in Dashboard component, redirecting to admin page");
-        navigate('/admin');
-      }
-    } else {
+    console.log("Dashboard component mounted with stored values:", {
+      userId: storedUserId,
+      userName: storedUserName,
+      userType: storedUserType,
+      isAdmin: storedIsAdmin
+    });
+    
+    if (!storedUserId) {
       // If no user ID is found, redirect to login
       console.log("No user ID found, redirecting to login");
       navigate('/');
+      return; // Stop execution to prevent setting state after redirect
     }
     
+    // Set initial state from localStorage
+    setUserId(storedUserId);
     if (storedUserName) {
       setUserName(storedUserName);
     }
+    
+    // Check if this is an admin user by stored value first, then by ID prefix as fallback
+    const isAdmin = storedIsAdmin === 'true' || (storedUserType === 'admin') || storedUserId.startsWith('admin_');
+    
+    // If user is admin but on user dashboard, redirect to admin page
+    if (isAdmin) {
+      console.log("Admin user detected in Dashboard component, redirecting to admin page");
+      // Add a small delay to prevent potential redirect loops
+      setTimeout(() => {
+        navigate('/admin');
+      }, 100);
+      return; // Stop execution to prevent setting state after redirect
+    }
+    
+    // For regular users, verify with server
+    verifyAuthentication(storedUserId);
+    
+    // Set up a periodic check but with less frequent interval to reduce server load
+    const authCheckInterval = setInterval(() => {
+      const currentUserId = localStorage.getItem('roadVisionUserId');
+      const currentIsAdmin = localStorage.getItem('roadVisionIsAdmin');
+      
+      // If user ID is removed, redirect to login
+      if (!currentUserId) {
+        console.log("User ID no longer found, redirecting to login");
+        navigate('/');
+        return;
+      }
+      
+      // Only verify non-admin users with the server
+      if (currentIsAdmin !== 'true' && !currentUserId.startsWith('admin_')) {
+        verifyAuthentication(currentUserId);
+      }
+      
+    }, 60000); // Check every 60 seconds (reduced from 30s)
+    
+    // Clean up interval on component unmount
+    return () => clearInterval(authCheckInterval);
   }, [navigate]);
 
   // Camera
@@ -73,10 +178,17 @@ const Dashboard = () => {
   
   // Road statistics
   const [roadStats, setRoadStats] = useState({
-    sanctioned: 0,
+    approved: 0,
     pending: 0,
-    repaired: 0
+    completed: 0,
+    rejected: 0
   });
+  
+  // Historical data for trends
+  const [historicalData, setHistoricalData] = useState([]);
+  
+  // We're only using the pie chart now
+  // const [activeChartType, setActiveChartType] = useState('pie');
 
   // 📍 Get Location
   const getLocation = async () => {
@@ -235,46 +347,492 @@ const Dashboard = () => {
     }
   }, [activeTab]);
   
+  // Ensure notification has a valid details structure
+  const validateNotification = (notification) => {
+    // Create a default details object if it doesn't exist
+    if (!notification.details) {
+      notification.details = {};
+    }
+    
+    // Ensure required fields exist
+    if (!notification.details.status) notification.details.status = 'pending';
+    if (!notification.details.severity) notification.details.severity = 'low';
+    if (!notification.details.address) notification.details.address = 'Unknown location';
+    if (!notification.details.date) notification.details.date = new Date().toLocaleDateString();
+    
+    return notification;
+  };
+
+  // Function to add a new notification
+  const addNotification = (notification) => {
+    const newNotification = validateNotification({
+      id: Date.now(),
+      timestamp: Date.now(),
+      read: false,
+      ...notification
+    });
+    
+    setNotifications(prev => {
+      // Validate all existing notifications too
+      const validatedPrev = prev.map(n => validateNotification(n));
+      const updatedNotifications = [newNotification, ...validatedPrev];
+      
+      // Save to localStorage
+      if (userId) {
+        localStorage.setItem(`roadVisionNotifications_${userId}`, JSON.stringify(updatedNotifications));
+      }
+      return updatedNotifications;
+    });
+    
+    // Show notification popup
+    setShowNotification(true);
+    // Auto-hide after 5 seconds
+    setTimeout(() => setShowNotification(false), 5000);
+  };
+  
+  // Load notifications from localStorage
+  useEffect(() => {
+    if (userId) {
+      try {
+        const storedNotifications = localStorage.getItem(`roadVisionNotifications_${userId}`);
+        if (storedNotifications) {
+          const parsedNotifications = JSON.parse(storedNotifications);
+          // Validate all notifications
+          const validatedNotifications = parsedNotifications.map(n => validateNotification(n));
+          setNotifications(validatedNotifications);
+          console.log("Loaded notifications from localStorage:", validatedNotifications);
+        }
+      } catch (error) {
+        console.error("Error loading notifications from localStorage:", error);
+        // If there's an error, clear the notifications in localStorage
+        localStorage.removeItem(`roadVisionNotifications_${userId}`);
+      }
+    }
+  }, [userId]);
+
+  // Listen for feedback notifications from the server
+  useEffect(() => {
+    if (userId) {
+      // Set up WebSocket connection to listen for notifications
+      const socket = new WebSocket('ws://localhost:5000');
+      let reconnectAttempts = 0;
+      let reconnectTimer = null;
+      
+      const connectWebSocket = () => {
+        socket.onopen = () => {
+          console.log('WebSocket connection established');
+          // Reset reconnect attempts on successful connection
+          reconnectAttempts = 0;
+          
+          // Authenticate with userId and specify user type
+          socket.send(JSON.stringify({ 
+            type: 'authenticate', 
+            userId
+            // Removed explicit userType to let server determine it correctly
+          }));
+        };
+        
+        socket.onmessage = (event) => {
+          try {
+            const data = JSON.parse(event.data);
+            
+            // Handle authentication response
+            if (data.type === 'auth_success') {
+              console.log('WebSocket authentication successful:', data.message);
+              
+              // Removed the redirection logic to prevent redirect loops
+              // The initial page load already checks user type
+            }
+            
+            // Handle authentication error
+            if (data.type === 'auth_error') {
+              console.error('WebSocket authentication error:', data.message);
+              // Optionally redirect to login if authentication fails
+              // navigate('/');
+              return;
+            }
+            
+            // Handle feedback notifications
+            if (data.type === 'feedback_status' || data.type === 'feedback_reply') {
+              addNotification({
+                type: data.type,
+                title: data.title,
+                message: data.message,
+                details: data.details
+              });
+            }
+          } catch (error) {
+            console.error('Error processing WebSocket message:', error);
+          }
+        };
+        
+        socket.onerror = (error) => {
+          console.error('WebSocket error:', error);
+        };
+        
+        socket.onclose = (event) => {
+          console.log(`WebSocket connection closed: ${event.code} ${event.reason}`);
+          
+          // Attempt to reconnect with exponential backoff
+          if (reconnectAttempts < 5) { // Limit reconnect attempts
+            const delay = Math.min(1000 * (2 ** reconnectAttempts), 30000); // Max 30 second delay
+            console.log(`Attempting to reconnect in ${delay/1000} seconds...`);
+            
+            reconnectTimer = setTimeout(() => {
+              reconnectAttempts++;
+              connectWebSocket();
+            }, delay);
+          }
+        };
+      };
+      
+      // Initial connection
+      connectWebSocket();
+      
+      // Clean up WebSocket and timers on component unmount
+      return () => {
+        if (socket.readyState === WebSocket.OPEN || socket.readyState === WebSocket.CONNECTING) {
+          socket.close();
+        }
+        if (reconnectTimer) {
+          clearTimeout(reconnectTimer);
+        }
+      };
+    }
+  }, [userId, navigate]);
+  
   // Load saved notifications from localStorage on component mount - user specific
   useEffect(() => {
     if (userId) {
       const savedNotifications = localStorage.getItem(`roadVisionNotifications_${userId}`);
       if (savedNotifications) {
         try {
-          setNotifications(JSON.parse(savedNotifications));
+          const parsedNotifications = JSON.parse(savedNotifications);
+          setNotifications(parsedNotifications);
+          
+          // If we have no notifications, create some demo data
+          if (parsedNotifications.length === 0) {
+            // Create demo notifications for testing
+            const demoNotifications = [
+              {
+                id: Date.now() - 1000,
+                type: 'review',
+                title: 'Report Approved',
+                message: 'Your road damage report has been approved',
+                details: { status: 'approved', action: 'repair scheduled' },
+                timestamp: Date.now() - 1000,
+                read: false
+              },
+              {
+                id: Date.now() - 2000,
+                type: 'review',
+                title: 'Report Pending',
+                message: 'Your road damage report is under review',
+                details: { status: 'pending' },
+                timestamp: Date.now() - 2000,
+                read: true
+              },
+              {
+                id: Date.now() - 3000,
+                type: 'review',
+                title: 'Repair Completed',
+                message: 'Repair work has been completed',
+                details: { status: 'approved', action: 'repair completed' },
+                timestamp: Date.now() - 3000,
+                read: true
+              },
+              // Add demo feedback notifications
+              {
+                id: Date.now() - 4000,
+                type: 'feedback_status',
+                title: 'Feedback Reviewed',
+                message: 'Your feedback has been reviewed by an administrator',
+                details: { status: 'completed', subject: 'Website Suggestion' },
+                timestamp: Date.now() - 4000,
+                read: true
+              },
+              {
+                id: Date.now() - 5000,
+                type: 'feedback_reply',
+                title: 'New Reply to Your Feedback',
+                message: 'You have received a reply to your feedback',
+                details: { 
+                  subject: 'App Performance Issue', 
+                  replyText: 'Thank you for reporting this issue. We have fixed the performance problem in our latest update.' 
+                },
+                timestamp: Date.now() - 5000,
+                read: false
+              }
+            ];
+            setNotifications(demoNotifications);
+            localStorage.setItem(`roadVisionNotifications_${userId}`, JSON.stringify(demoNotifications));
+          }
         } catch (error) {
           console.error('Error parsing saved notifications:', error);
+          // Create fallback notifications
+          const fallbackNotifications = [];
+          setNotifications(fallbackNotifications);
+          localStorage.setItem(`roadVisionNotifications_${userId}`, JSON.stringify(fallbackNotifications));
         }
+      } else {
+        // If no notifications exist yet, create some demo data
+        const demoNotifications = [
+          {
+            id: Date.now() - 1000,
+            type: 'review',
+            title: 'Report Approved',
+            message: 'Your road damage report has been approved',
+            details: { status: 'approved', action: 'repair scheduled' },
+            timestamp: Date.now() - 1000,
+            read: false
+          },
+          {
+            id: Date.now() - 2000,
+            type: 'review',
+            title: 'Report Pending',
+            message: 'Your road damage report is under review',
+            details: { status: 'pending' },
+            timestamp: Date.now() - 2000,
+            read: true
+          },
+          {
+            id: Date.now() - 3000,
+            type: 'review',
+            title: 'Repair Completed',
+            message: 'Repair work has been completed',
+            details: { status: 'approved', action: 'repair completed' },
+            timestamp: Date.now() - 3000,
+            read: true
+          },
+          // Add demo feedback notifications
+          {
+            id: Date.now() - 4000,
+            type: 'feedback_status',
+            title: 'Feedback Reviewed',
+            message: 'Your feedback has been reviewed by an administrator',
+            details: { status: 'completed', subject: 'Website Suggestion' },
+            timestamp: Date.now() - 4000,
+            read: true
+          },
+          {
+            id: Date.now() - 5000,
+            type: 'feedback_reply',
+            title: 'New Reply to Your Feedback',
+            message: 'You have received a reply to your feedback',
+            details: { 
+              subject: 'App Performance Issue', 
+              replyText: 'Thank you for reporting this issue. We have fixed the performance problem in our latest update.' 
+            },
+            timestamp: Date.now() - 5000,
+            read: false
+          }
+        ];
+        setNotifications(demoNotifications);
+        localStorage.setItem(`roadVisionNotifications_${userId}`, JSON.stringify(demoNotifications));
       }
     }
   }, [userId]);
 
   // Save notifications to localStorage whenever they change and update road statistics - user specific
   useEffect(() => {
-    if (notifications.length > 0 && userId) {
+    if (userId) {
+      // Always save notifications to localStorage, even if empty
       localStorage.setItem(`roadVisionNotifications_${userId}`, JSON.stringify(notifications));
       
-      // Calculate road statistics from notifications
-      const sanctioned = notifications.filter(n => 
-        n.details && n.details.status === 'approved'
-      ).length;
+      // Only update statistics if we have notifications and haven't already fetched from API
+      if (notifications.length > 0 && !statsLoading) {
+        // Calculate road statistics from notifications
+        const approved = notifications.filter(n => 
+          n.details && n.details.status === 'approved'
+        ).length;
+        
+        const pending = notifications.filter(n => 
+          n.details && (n.details.status === 'pending' || n.details.status === 'in-progress')
+        ).length;
+        
+        const completed = notifications.filter(n => 
+          n.details && n.details.action && n.details.action.toLowerCase().includes('repair') && 
+          n.details.status === 'approved'
+        ).length;
+        
+        const rejected = notifications.filter(n => 
+          n.details && n.details.status === 'rejected'
+        ).length;
+        
+        // Only update if we have at least one non-zero value to prevent resetting
+        if (approved > 0 || pending > 0 || completed > 0 || rejected > 0) {
+          setRoadStats({
+            approved,
+            pending,
+            completed,
+            rejected
+          });
+        }
+      }
+    }
+  }, [notifications, userId, statsLoading]);
+  
+  // Generate historical data for trends
+  const generateHistoricalData = (currentStats) => {
+    // Create 7 days of historical data
+    const days = 7;
+    const data = [];
+    
+    // Get current date
+    const today = new Date();
+    
+    for (let i = days - 1; i >= 0; i--) {
+      const date = new Date(today);
+      date.setDate(date.getDate() - i);
       
-      const pending = notifications.filter(n => 
-        n.details && (n.details.status === 'pending' || n.details.status === 'in-progress')
-      ).length;
+      // Format date as MM/DD
+      const formattedDate = `${date.getMonth() + 1}/${date.getDate()}`;
       
-      const repaired = notifications.filter(n => 
-        n.details && n.details.action && n.details.action.toLowerCase().includes('repair') && 
-        n.details.status === 'approved'
-      ).length;
+      // Generate realistic trend data based on current stats
+      // Earlier days have slightly lower values to show growth
+      const factor = 0.7 + ((days - i) / days) * 0.5;
       
-      setRoadStats({
-        sanctioned,
-        pending,
-        repaired
+      data.push({
+        date: formattedDate,
+        Approved: Math.round(currentStats.approved * factor * (0.9 + Math.random() * 0.2)),
+        Pending: Math.round(currentStats.pending * factor * (0.9 + Math.random() * 0.2)),
+        Completed: Math.round(currentStats.completed * factor * (0.9 + Math.random() * 0.2)),
+        Rejected: Math.round(currentStats.rejected * factor * (0.9 + Math.random() * 0.2)),
+        Total: 0 // Will be calculated below
       });
     }
-  }, [notifications]);
+    
+    // Calculate totals and cumulative values for area chart
+    let cumulativeApproved = 0;
+    let cumulativePending = 0;
+    let cumulativeCompleted = 0;
+    let cumulativeRejected = 0;
+    
+    data.forEach(day => {
+      day.Total = day.Approved + day.Pending + day.Completed + day.Rejected;
+      
+      // Add cumulative values for area chart
+      cumulativeApproved += day.Approved * 0.2; // Scale down for better visualization
+      cumulativePending += day.Pending * 0.2;
+      cumulativeCompleted += day.Completed * 0.2;
+      cumulativeRejected += day.Rejected * 0.2;
+      
+      day.CumulativeApproved = Math.round(cumulativeApproved);
+      day.CumulativePending = Math.round(cumulativePending);
+      day.CumulativeCompleted = Math.round(cumulativeCompleted);
+      day.CumulativeRejected = Math.round(cumulativeRejected);
+    });
+    
+    return data;
+  };
+
+  // Function to fetch road statistics
+  const fetchRoadStats = async () => {
+    if (!userId) return;
+    
+    try {
+      setStatsLoading(true);
+      
+      // Try to fetch from API first
+      const response = await fetch(`http://localhost:5000/api/road-stats?userId=${userId}`);
+      
+      let newStats;
+      
+      if (response.ok) {
+        const data = await response.json();
+        // Only update if we have valid data with at least one non-zero value
+        if (data && (data.approved > 0 || data.pending > 0 || data.completed > 0 || data.rejected > 0)) {
+          newStats = data;
+          setRoadStats(data);
+        }
+      } else {
+        console.log('Using calculated stats from notifications');
+        
+        // If API fails, use mock data for demo purposes
+        if (notifications.length === 0) {
+          // Use demo data if no notifications exist
+          newStats = {
+            approved: Math.floor(Math.random() * 10) + 5,
+            pending: Math.floor(Math.random() * 8) + 3,
+            completed: Math.floor(Math.random() * 7) + 2,
+            rejected: Math.floor(Math.random() * 4) + 1
+          };
+          setRoadStats(newStats);
+        } else {
+          // Calculate stats from notifications
+          const approved = notifications.filter(n => 
+            n.details && n.details.status === 'approved'
+          ).length;
+          
+          const pending = notifications.filter(n => 
+            n.details && (n.details.status === 'pending' || n.details.status === 'in-progress')
+          ).length;
+          
+          const completed = notifications.filter(n => 
+            n.details && n.details.action && n.details.action.toLowerCase().includes('repair') && 
+            n.details.status === 'approved'
+          ).length;
+          
+          const rejected = notifications.filter(n => 
+            n.details && n.details.status === 'rejected'
+          ).length;
+          
+          // Only update if we have at least one non-zero value
+          if (approved > 0 || pending > 0 || completed > 0 || rejected > 0) {
+            newStats = {
+              approved,
+              pending,
+              completed,
+              rejected
+            };
+            setRoadStats(newStats);
+          }
+        }
+      }
+      
+      // Generate historical data based on the new stats
+      if (newStats) {
+        const historicalData = generateHistoricalData(newStats);
+        setHistoricalData(historicalData);
+      }
+    } catch (error) {
+      console.error('Error fetching road statistics:', error);
+      // Use demo data for fallback
+      setRoadStats(prevStats => {
+        // Only set demo data if current stats are all zeros
+        if (prevStats.approved === 0 && prevStats.pending === 0 && 
+            prevStats.completed === 0 && prevStats.rejected === 0) {
+          const newStats = {
+            approved: Math.floor(Math.random() * 10) + 5,
+            pending: Math.floor(Math.random() * 8) + 3,
+            completed: Math.floor(Math.random() * 7) + 2,
+            rejected: Math.floor(Math.random() * 4) + 1
+          };
+          
+          // Generate historical data
+          const historicalData = generateHistoricalData(newStats);
+          setHistoricalData(historicalData);
+          
+          return newStats;
+        }
+        return prevStats;
+      });
+    } finally {
+      setStatsLoading(false);
+    }
+  };
+  
+  // Fetch road statistics from API
+  useEffect(() => {
+    if (!userId) return;
+    
+    fetchRoadStats();
+    
+    // Set up interval to refresh stats every 30 seconds
+    const intervalId = setInterval(fetchRoadStats, 30000);
+    
+    return () => clearInterval(intervalId);
+  }, [userId]);
 
   // Socket.IO connection for real-time notifications
   useEffect(() => {
@@ -536,17 +1094,17 @@ const Dashboard = () => {
     return (
       <div className="fixed top-4 right-4 z-50 max-w-md w-full bg-white rounded-lg shadow-xl overflow-hidden transition-all duration-300 transform translate-y-0 animate-slideIn">
         <div className={`px-4 py-3 text-white ${
-          latestNotification.details.status === 'approved' ? 'bg-gradient-to-r from-green-600 to-green-500' :
-          latestNotification.details.status === 'rejected' ? 'bg-gradient-to-r from-red-600 to-red-500' :
-          latestNotification.details.status === 'in-progress' ? 'bg-gradient-to-r from-blue-600 to-blue-500' :
+          latestNotification.details?.status === 'approved' ? 'bg-gradient-to-r from-green-600 to-green-500' :
+          latestNotification.details?.status === 'rejected' ? 'bg-gradient-to-r from-red-600 to-red-500' :
+          latestNotification.details?.status === 'in-progress' ? 'bg-gradient-to-r from-blue-600 to-blue-500' :
           'bg-gradient-to-r from-gray-700 to-gray-600'
         }`}>
           <div className="flex justify-between items-center">
             <div className="flex items-center gap-2">
               <div className="bg-white bg-opacity-20 p-1.5 rounded-full">
-                {latestNotification.details.status === 'approved' ? 
+                {latestNotification.details?.status === 'approved' ? 
                   <CheckCircle className="h-4 w-4" /> : 
-                  latestNotification.details.status === 'rejected' ? 
+                  latestNotification.details?.status === 'rejected' ? 
                   <AlertTriangle className="h-4 w-4" /> : 
                   <Clock className="h-4 w-4" />
                 }
@@ -570,35 +1128,39 @@ const Dashboard = () => {
               <div>
                 <p className="text-xs text-gray-500">Status</p>
                 <p className={`font-medium ${
-                  latestNotification.details.status === 'approved' ? 'text-green-600' :
-                  latestNotification.details.status === 'rejected' ? 'text-red-600' :
-                  latestNotification.details.status === 'in-progress' ? 'text-blue-600' :
+                  latestNotification.details?.status === 'approved' ? 'text-green-600' :
+                  latestNotification.details?.status === 'rejected' ? 'text-red-600' :
+                  latestNotification.details?.status === 'in-progress' ? 'text-blue-600' :
                   'text-gray-700'
                 }`}>
-                  {latestNotification.details.status.charAt(0).toUpperCase() + latestNotification.details.status.slice(1)}
+                  {latestNotification.details?.status ? 
+                    (latestNotification.details.status.charAt(0).toUpperCase() + latestNotification.details.status.slice(1)) : 
+                    'Pending'}
                 </p>
               </div>
               <div>
                 <p className="text-xs text-gray-500">Severity</p>
                 <p className={`font-medium ${
-                  latestNotification.details.severity === 'severe' ? 'text-red-600' :
-                  latestNotification.details.severity === 'high' ? 'text-orange-600' :
-                  latestNotification.details.severity === 'moderate' ? 'text-yellow-600' :
+                  latestNotification.details?.severity === 'severe' ? 'text-red-600' :
+                  latestNotification.details?.severity === 'high' ? 'text-orange-600' :
+                  latestNotification.details?.severity === 'moderate' ? 'text-yellow-600' :
                   'text-green-600'
                 }`}>
-                  {latestNotification.details.severity.charAt(0).toUpperCase() + latestNotification.details.severity.slice(1)}
+                  {latestNotification.details?.severity ? 
+                    (latestNotification.details.severity.charAt(0).toUpperCase() + latestNotification.details.severity.slice(1)) : 
+                    'Unknown'}
                 </p>
               </div>
             </div>
             
-            {latestNotification.details.notes && (
+            {latestNotification.details?.notes && (
               <div className="pt-1">
                 <p className="text-xs text-gray-500">Notes</p>
                 <p className="text-gray-700">{latestNotification.details.notes}</p>
               </div>
             )}
             
-            {latestNotification.details.action && (
+            {latestNotification.details?.action && (
               <div className="pt-1">
                 <p className="text-xs text-gray-500">Recommended Action</p>
                 <p className="text-gray-700">{latestNotification.details.action}</p>
@@ -607,12 +1169,12 @@ const Dashboard = () => {
             
             <div className="pt-1">
               <p className="text-xs text-gray-500">Location</p>
-              <p className="text-gray-700 truncate">{latestNotification.details.address}</p>
+              <p className="text-gray-700 truncate">{latestNotification.details?.address || 'Unknown location'}</p>
             </div>
             
             <div className="pt-1">
               <p className="text-xs text-gray-500">Review Date</p>
-              <p className="text-gray-700">{latestNotification.details.date}</p>
+              <p className="text-gray-700">{latestNotification.details?.date || new Date().toLocaleDateString()}</p>
             </div>
           </div>
           
@@ -697,14 +1259,14 @@ const Dashboard = () => {
                     <div className="flex justify-between items-start">
                       <div className="flex items-start gap-3">
                         <div className={`p-2 rounded-full ${
-                          notification.details.status === 'approved' ? 'bg-green-100 text-green-600' :
-                          notification.details.status === 'rejected' ? 'bg-red-100 text-red-600' :
-                          notification.details.status === 'in-progress' ? 'bg-blue-100 text-blue-600' :
+                          notification.details?.status === 'approved' ? 'bg-green-100 text-green-600' :
+                          notification.details?.status === 'rejected' ? 'bg-red-100 text-red-600' :
+                          notification.details?.status === 'in-progress' ? 'bg-blue-100 text-blue-600' :
                           'bg-gray-100 text-gray-600'
                         }`}>
-                          {notification.details.status === 'approved' ? 
+                          {notification.details?.status === 'approved' ? 
                             <CheckCircle className="h-5 w-5" /> : 
-                            notification.details.status === 'rejected' ? 
+                            notification.details?.status === 'rejected' ? 
                             <AlertTriangle className="h-5 w-5" /> : 
                             <Clock className="h-5 w-5" />
                           }
@@ -776,12 +1338,12 @@ const Dashboard = () => {
       {/* Sidebar */}
       <div className="w-64 bg-white p-5 shadow-lg">
         <div className="flex flex-col items-center justify-center mb-8">
-          <div className="bg-gradient-to-r from-blue-600 to-green-500 p-2 rounded-lg mb-2">
+          <div className=" ">
         
           </div>
           {userName && (
-            <div className="text-xl text-blue-600 mt-2">
-              Welcome, <span className="font-bold">{userName}</span>
+             <div>
+                <span className="font-bold">{   }</span>
             </div>
           )}
         </div>
@@ -1136,67 +1698,130 @@ const Dashboard = () => {
 
 
 {activeTab === "Dashboard" && (
-  <div className="flex-1 p-6 bg-gray-100 animate-fadeIn overflow-y-auto min-h-screen">
-    <h2 className="text-3xl font-bold mb-2">Dashboard</h2>
-    <p className="text-gray-700 mb-6">Welcome to the dashboard!</p>
+  <div className="flex-1 bg-gradient-to-br from-gray-50 to-slate-50 p-8 animate-fadeIn overflow-y-auto min-h-screen">
+    <div className="flex flex-col md:flex-row md:justify-between md:items-center gap-4 mb-8">
+      <div>
+        <div className="flex items-center gap-3 mb-2">
+          <div className="bg-gradient-to-r from-indigo-600 to-blue-600 text-white p-3 rounded-xl shadow-md">
+            <FaHome className="h-6 w-6" />
+          </div>
+          <h2 className="text-3xl font-bold text-gray-800">Road Monitoring Dashboard</h2>
+        </div>
+        <p className="text-gray-600 pl-1">
+          Welcome back, <span className="font-semibold text-indigo-700">{userName}</span>! 
+          Here's your real-time road condition monitoring overview.
+        </p>
+      </div>
+      
+      <div className="flex flex-wrap items-center gap-3">
+        <div className="bg-white px-4 py-2 rounded-xl shadow-sm border border-gray-100 text-gray-700 flex items-center gap-2">
+          <Clock className="h-4 w-4 text-indigo-600" />
+          <span className="text-sm font-medium">Last updated: {new Date().toLocaleTimeString()}</span>
+        </div>
+        <button 
+          onClick={fetchRoadStats}
+          className="bg-indigo-600 p-2 rounded-xl shadow-sm hover:shadow-md transition-all text-white flex items-center gap-2 px-4"
+          disabled={statsLoading}
+        >
+          <RefreshCw className={`h-4 w-4 ${statsLoading ? 'animate-spin' : ''}`} />
+          <span className="text-sm font-medium">Refresh</span>
+        </button>
+      </div>
+    </div>
 
     {/* Top Cards */}
-    <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-6">
-      <div className="bg-gradient-to-r from-blue-500 to-blue-600 text-white rounded-2xl p-6 shadow-lg hover:shadow-xl transition-all duration-300 transform hover:-translate-y-1">
+    <div className="grid grid-cols-1 md:grid-cols-4 gap-6 mb-6">
+      <div className="bg-white rounded-2xl p-6 shadow-lg hover:shadow-xl transition-all duration-300 transform hover:-translate-y-1 border-l-4 border-emerald-500">
         <div className="flex justify-between items-start">
           <div>
-            <h2 className="text-xl font-bold mb-2">Sanctioned Roads</h2>
-            <p className="text-sm text-blue-100">Approved for construction</p>
+            <h2 className="text-xl font-bold mb-2 text-gray-800">Approved Reports</h2>
+            <p className="text-sm text-gray-500">Verified road issues</p>
           </div>
-          <div className="bg-white bg-opacity-20 p-3 rounded-lg">
-            <CheckCircle className="h-6 w-6" />
+          <div className="bg-emerald-100 p-3 rounded-full">
+            <CheckCircle className="h-6 w-6 text-emerald-600" />
           </div>
         </div>
         <div className="mt-6">
-          <span className="text-4xl font-bold">{roadStats.sanctioned}</span>
-          <div className="mt-2 text-sm text-blue-100">
-            <span className="bg-blue-700 bg-opacity-50 px-2 py-1 rounded-full">
-              {notifications.length > 0 ? Math.round((roadStats.sanctioned / notifications.length) * 100) : 0}% of total
+          {statsLoading ? (
+            <div className="h-10 w-16 bg-emerald-100 animate-pulse rounded-md"></div>
+          ) : (
+            <span className="text-4xl font-bold text-emerald-600">{roadStats.approved}</span>
+          )}
+          <div className="mt-2 text-sm">
+            <span className="bg-emerald-100 text-emerald-800 px-3 py-1 rounded-full font-medium">
+              {notifications.length > 0 ? Math.round((roadStats.approved / notifications.length) * 100) : 0}% of total
             </span>
           </div>
         </div>
       </div>
 
-      <div className="bg-gradient-to-r from-purple-500 to-purple-600 text-white rounded-2xl p-6 shadow-lg hover:shadow-xl transition-all duration-300 transform hover:-translate-y-1">
+      <div className="bg-white rounded-2xl p-6 shadow-lg hover:shadow-xl transition-all duration-300 transform hover:-translate-y-1 border-l-4 border-amber-500">
         <div className="flex justify-between items-start">
           <div>
-            <h2 className="text-xl font-bold mb-2">Pending Roads</h2>
-            <p className="text-sm text-purple-100">Awaiting approval</p>
+            <h2 className="text-xl font-bold mb-2 text-gray-800">Pending Review</h2>
+            <p className="text-sm text-gray-500">Awaiting assessment</p>
           </div>
-          <div className="bg-white bg-opacity-20 p-3 rounded-lg">
-            <Clock className="h-6 w-6" />
+          <div className="bg-amber-100 p-3 rounded-full">
+            <Clock className="h-6 w-6 text-amber-600" />
           </div>
         </div>
         <div className="mt-6">
-          <span className="text-4xl font-bold">{roadStats.pending}</span>
-          <div className="mt-2 text-sm text-purple-100">
-            <span className="bg-purple-700 bg-opacity-50 px-2 py-1 rounded-full">
+          {statsLoading ? (
+            <div className="h-10 w-16 bg-amber-100 animate-pulse rounded-md"></div>
+          ) : (
+            <span className="text-4xl font-bold text-amber-600">{roadStats.pending}</span>
+          )}
+          <div className="mt-2 text-sm">
+            <span className="bg-amber-100 text-amber-800 px-3 py-1 rounded-full font-medium">
               {notifications.length > 0 ? Math.round((roadStats.pending / notifications.length) * 100) : 0}% of total
             </span>
           </div>
         </div>
       </div>
 
-      <div className="bg-gradient-to-r from-yellow-400 to-yellow-500 text-yellow-900 rounded-2xl p-6 shadow-lg hover:shadow-xl transition-all duration-300 transform hover:-translate-y-1">
+      <div className="bg-white rounded-2xl p-6 shadow-lg hover:shadow-xl transition-all duration-300 transform hover:-translate-y-1 border-l-4 border-blue-500">
         <div className="flex justify-between items-start">
           <div>
-            <h2 className="text-xl font-bold mb-2">Repaired Roads</h2>
-            <p className="text-sm text-yellow-800">Completed repairs</p>
+            <h2 className="text-xl font-bold mb-2 text-gray-800">Completed Repairs</h2>
+            <p className="text-sm text-gray-500">Fixed road issues</p>
           </div>
-          <div className="bg-white bg-opacity-30 p-3 rounded-lg">
-            <span role="img" aria-label="repair" className="text-xl">🛠️</span>
+          <div className="bg-blue-100 p-3 rounded-full">
+            <CheckCircle className="h-6 w-6 text-blue-600" />
           </div>
         </div>
         <div className="mt-6">
-          <span className="text-4xl font-bold">{roadStats.repaired}</span>
-          <div className="mt-2 text-sm text-yellow-800">
-            <span className="bg-yellow-600 bg-opacity-30 px-2 py-1 rounded-full">
-              {roadStats.sanctioned > 0 ? Math.round((roadStats.repaired / roadStats.sanctioned) * 100) : 0}% of sanctioned
+          {statsLoading ? (
+            <div className="h-10 w-16 bg-blue-100 animate-pulse rounded-md"></div>
+          ) : (
+            <span className="text-4xl font-bold text-blue-600">{roadStats.completed}</span>
+          )}
+          <div className="mt-2 text-sm">
+            <span className="bg-blue-100 text-blue-800 px-3 py-1 rounded-full font-medium">
+              {roadStats.approved > 0 ? Math.round((roadStats.completed / roadStats.approved) * 100) : 0}% completion rate
+            </span>
+          </div>
+        </div>
+      </div>
+      
+      <div className="bg-white rounded-2xl p-6 shadow-lg hover:shadow-xl transition-all duration-300 transform hover:-translate-y-1 border-l-4 border-rose-500">
+        <div className="flex justify-between items-start">
+          <div>
+            <h2 className="text-xl font-bold mb-2 text-gray-800">Rejected Reports</h2>
+            <p className="text-sm text-gray-500">Not requiring action</p>
+          </div>
+          <div className="bg-rose-100 p-3 rounded-full">
+            <AlertCircle className="h-6 w-6 text-rose-600" />
+          </div>
+        </div>
+        <div className="mt-6">
+          {statsLoading ? (
+            <div className="h-10 w-16 bg-rose-100 animate-pulse rounded-md"></div>
+          ) : (
+            <span className="text-4xl font-bold text-rose-600">{roadStats.rejected}</span>
+          )}
+          <div className="mt-2 text-sm">
+            <span className="bg-rose-100 text-rose-800 px-3 py-1 rounded-full font-medium">
+              {(roadStats.approved + roadStats.rejected) > 0 ? Math.round((roadStats.rejected / (roadStats.approved + roadStats.rejected)) * 100) : 0}% rejection rate
             </span>
           </div>
         </div>
@@ -1213,62 +1838,154 @@ const Dashboard = () => {
            
 
       {/* Chart Instead of Analysis */}
-      <div className="bg-white rounded-2xl p-6 shadow-lg">
-        <div className="flex justify-between items-center mb-6">
-          <h2 className="text-xl font-bold">Road Status Overview</h2>
-          <div className="bg-blue-50 text-blue-600 text-xs px-3 py-1 rounded-full font-medium">
-            Based on {notifications.length} notifications
+      <div className="bg-white rounded-2xl p-6 shadow-lg border border-gray-100">
+        <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center mb-6 gap-4">
+          <h2 className="text-xl font-bold flex items-center gap-2 text-gray-800">
+            <div className="bg-indigo-100 p-2 rounded-lg">
+              <PieChartIcon className="h-5 w-5 text-indigo-600" />
+            </div>
+            Road Status Analytics
+            <button 
+              onClick={fetchRoadStats}
+              className="bg-indigo-50 p-1 rounded-full hover:bg-indigo-100 transition-colors"
+              title="Refresh data"
+              disabled={statsLoading}
+            >
+              <RefreshCw className={`h-4 w-4 text-indigo-600 ${statsLoading ? 'animate-spin' : ''}`} />
+            </button>
+          </h2>
+          <div className="flex flex-wrap items-center gap-2">
+            <div className="bg-indigo-50 text-indigo-700 text-xs px-3 py-1.5 rounded-full font-medium">
+              Based on {notifications.length} notifications
+            </div>
+            <div className="bg-emerald-50 text-emerald-700 text-xs px-3 py-1.5 rounded-full font-medium flex items-center gap-1">
+              <Clock className="h-3 w-3" />
+              Last updated: {new Date().toLocaleTimeString()}
+            </div>
+          </div>
+        </div>
+        <div className="mb-4">
+          <div className="flex items-center gap-2 mb-2">
+            <PieChartIcon className="h-5 w-5 text-indigo-600" />
+            <h3 className="text-lg font-medium text-gray-800">Road Reports Distribution</h3>
+          </div>
+          <p className="text-sm text-gray-500">
+            Proportional breakdown of road reports by status category.
+          </p>
+        </div>
+        
+        {statsLoading ? (
+          <div className="h-[300px] w-full flex items-center justify-center">
+            <div className="flex flex-col items-center">
+              <div className="w-12 h-12 border-4 border-indigo-500 border-t-transparent rounded-full animate-spin"></div>
+              <p className="mt-4 text-gray-500 font-medium">Loading statistics...</p>
+              <p className="text-xs text-gray-400">Fetching the latest road report data</p>
+            </div>
+          </div>
+        ) : (
+          <ResponsiveContainer width="100%" height={350}>
+            <PieChart>
+              <Pie
+                data={[
+                  { name: 'Approved', value: roadStats.approved, color: '#10b981' },
+                  { name: 'Pending', value: roadStats.pending, color: '#f59e0b' },
+                  { name: 'Completed', value: roadStats.completed, color: '#3b82f6' },
+                  { name: 'Rejected', value: roadStats.rejected, color: '#f43f5e' },
+                ]}
+                cx="50%"
+                cy="50%"
+                labelLine={true}
+                outerRadius={130}
+                innerRadius={70}
+                fill="#8884d8"
+                dataKey="value"
+                nameKey="name"
+                label={({ name, percent }) => `${name}: ${(percent * 100).toFixed(0)}%`}
+                paddingAngle={3}
+                animationBegin={0}
+                animationDuration={1000}
+                animationEasing="ease-out"
+              >
+                {[
+                  { name: 'Approved', value: roadStats.approved, color: '#10b981' },
+                  { name: 'Pending', value: roadStats.pending, color: '#f59e0b' },
+                  { name: 'Completed', value: roadStats.completed, color: '#3b82f6' },
+                  { name: 'Rejected', value: roadStats.rejected, color: '#f43f5e' },
+                ].map((entry, index) => (
+                  <Cell 
+                    key={`cell-${index}`} 
+                    fill={entry.color} 
+                    stroke="#ffffff" 
+                    strokeWidth={2}
+                  />
+                ))}
+              </Pie>
+              <Tooltip 
+                formatter={(value, name) => [`${value} reports`, name]} 
+                contentStyle={{ 
+                  backgroundColor: 'rgba(255, 255, 255, 0.95)',
+                  borderRadius: '8px',
+                  padding: '10px',
+                  boxShadow: '0 4px 6px rgba(0, 0, 0, 0.1)',
+                  border: '1px solid #e2e8f0'
+                }}
+                itemStyle={{ color: '#4b5563' }}
+                labelStyle={{ fontWeight: 'bold', color: '#1f2937' }}
+              />
+              <Legend 
+                verticalAlign="bottom" 
+                height={36} 
+                iconType="circle"
+                iconSize={10}
+                layout="horizontal"
+                wrapperStyle={{
+                  paddingTop: '15px',
+                  fontSize: '14px'
+                }}
+              />
+            </PieChart>
+          </ResponsiveContainer>
+        )}
+        
+        <div className="mt-6 bg-white p-6 rounded-xl shadow-sm border border-gray-100">
+          <div className="flex items-center gap-2 mb-3">
+            <FileText className="h-5 w-5 text-indigo-600" />
+            <h3 className="text-lg font-medium text-gray-800">Report Summary</h3>
+          </div>
+          <div className="flex flex-wrap gap-4 justify-center">
+            <div className="flex items-center gap-2">
+              <div className="w-4 h-4 rounded-full bg-emerald-500"></div>
+              <span className="text-sm text-gray-700">
+                <span className="font-medium">{roadStats.approved}</span> Approved
+              </span>
+            </div>
+            <div className="flex items-center gap-2">
+              <div className="w-4 h-4 rounded-full bg-amber-500"></div>
+              <span className="text-sm text-gray-700">
+                <span className="font-medium">{roadStats.pending}</span> Pending
+              </span>
+            </div>
+            <div className="flex items-center gap-2">
+              <div className="w-4 h-4 rounded-full bg-blue-500"></div>
+              <span className="text-sm text-gray-700">
+                <span className="font-medium">{roadStats.completed}</span> Completed
+              </span>
+            </div>
+            <div className="flex items-center gap-2">
+              <div className="w-4 h-4 rounded-full bg-rose-500"></div>
+              <span className="text-sm text-gray-700">
+                <span className="font-medium">{roadStats.rejected}</span> Rejected
+              </span>
+            </div>
+            <div className="flex items-center gap-2 ml-4 pl-4 border-l border-gray-200">
+              <span className="text-sm text-gray-700">
+                Total: <span className="font-medium">{roadStats.approved + roadStats.pending + roadStats.completed + roadStats.rejected}</span> Reports
+              </span>
+            </div>
           </div>
         </div>
         
-        <ResponsiveContainer width="100%" height={300}>
-          <BarChart
-            data={[
-              { 
-                name: 'Status', 
-                Sanctioned: roadStats.sanctioned, 
-                Pending: roadStats.pending, 
-                Repaired: roadStats.repaired,
-                Rejected: notifications.filter(n => n.details && n.details.status === 'rejected').length
-              }
-            ]}
-            margin={{ top: 10, right: 30, left: 0, bottom: 0 }}
-            layout="vertical"
-          >
-            <CartesianGrid strokeDasharray="3 3" horizontal={true} vertical={false} />
-            <XAxis type="number" />
-            <YAxis type="category" dataKey="name" hide />
-            <Tooltip 
-              formatter={(value, name) => [`${value} roads`, name]}
-              labelFormatter={() => 'Road Status'}
-            />
-            <Legend />
-            <Bar dataKey="Sanctioned" fill="#3b82f6" radius={[0, 4, 4, 0]} barSize={40} />
-            <Bar dataKey="Pending" fill="#a855f7" radius={[0, 4, 4, 0]} barSize={40} />
-            <Bar dataKey="Repaired" fill="#eab308" radius={[0, 4, 4, 0]} barSize={40} />
-            <Bar dataKey="Rejected" fill="#ef4444" radius={[0, 4, 4, 0]} barSize={40} />
-          </BarChart>
-        </ResponsiveContainer>
-        
-        <div className="grid grid-cols-2 gap-4 mt-6">
-          <div className="bg-gray-50 p-4 rounded-lg border border-gray-100">
-            <p className="text-sm text-gray-500 mb-1">Approval Rate</p>
-            <p className="text-2xl font-bold text-blue-600">
-              {notifications.length > 0 
-                ? Math.round((roadStats.sanctioned / notifications.length) * 100) 
-                : 0}%
-            </p>
-          </div>
-          
-          <div className="bg-gray-50 p-4 rounded-lg border border-gray-100">
-            <p className="text-sm text-gray-500 mb-1">Repair Rate</p>
-            <p className="text-2xl font-bold text-yellow-600">
-              {roadStats.sanctioned > 0 
-                ? Math.round((roadStats.repaired / roadStats.sanctioned) * 100) 
-                : 0}%
-            </p>
-          </div>
-        </div>
+
       </div>
     </div>
   </div>

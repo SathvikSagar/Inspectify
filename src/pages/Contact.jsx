@@ -1,9 +1,13 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
 import Footer from '../components/Footer';
 import { Mail, Phone, MapPin, Send, User, MessageSquare, AlertCircle, CheckCircle } from 'lucide-react';
+import { useNavigate } from 'react-router-dom';
 
 const Contact = () => {
+    const navigate = useNavigate();
+    const [userId, setUserId] = useState(null);
+    const [userName, setUserName] = useState('');
     const [formData, setFormData] = useState({
         name: '',
         email: '',
@@ -13,6 +17,25 @@ const Contact = () => {
     const [loading, setLoading] = useState(false);
     const [success, setSuccess] = useState(false);
     const [error, setError] = useState('');
+    
+    // Get user info from localStorage on component mount
+    useEffect(() => {
+        const storedUserId = localStorage.getItem('roadVisionUserId');
+        const storedUserName = localStorage.getItem('roadVisionUserName');
+        
+        if (storedUserId) {
+            setUserId(storedUserId);
+        }
+        
+        if (storedUserName) {
+            setUserName(storedUserName);
+            // Pre-fill name field if user is logged in
+            setFormData(prev => ({
+                ...prev,
+                name: storedUserName
+            }));
+        }
+    }, []);
 
     const handleChange = (e) => {
         const { name, value } = e.target;
@@ -29,19 +52,30 @@ const Contact = () => {
         setSuccess(false);
     
         try {
+            // Include userId if available
+            const feedbackData = {
+                ...formData,
+                userId: userId // Include userId to associate feedback with the user
+            };
+            
             const response = await fetch('http://localhost:5000/api/feedback', {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json'
                 },
-                body: JSON.stringify(formData)
+                body: JSON.stringify(feedbackData)
             });
     
             const data = await response.json();
     
             if (response.ok) {
                 setSuccess(true);
-                setFormData({ name: '', email: '', subject: '', message: '' }); // Reset form
+                // Keep the name if user is logged in, otherwise reset all fields
+                if (userId) {
+                    setFormData({ name: userName, email: '', subject: '', message: '' });
+                } else {
+                    setFormData({ name: '', email: '', subject: '', message: '' });
+                }
             } else {
                 setError(data.message || 'Something went wrong. Please try again.');
             }
@@ -120,7 +154,7 @@ const Contact = () => {
                                 </div>
                             </div>
                             <a href="mailto:support@roadinspect.com" className="text-green-600 font-medium hover:text-green-700 transition-colors">
-                                support@roadinspect.com
+                                safestreet386@gmail.com
                             </a>
                         </motion.div>
 
@@ -138,7 +172,7 @@ const Contact = () => {
                                 </div>
                             </div>
                             <a href="tel:+1234567890" className="text-green-600 font-medium hover:text-green-700 transition-colors">
-                                +1 (234) 567-890
+                                +91 7989841976
                             </a>
                         </motion.div>
 
@@ -152,13 +186,13 @@ const Contact = () => {
                                 </div>
                                 <div>
                                     <h3 className="text-lg font-semibold text-gray-900">Visit Us</h3>
-                                    <p className="text-gray-600">Come say hello at our office</p>
+                                    <p className="text-gray-600">Admin office</p>
                                 </div>
                             </div>
                             <p className="text-gray-700">
-                                123 Innovation Drive<br />
-                                Tech Park, Suite 400<br />
-                                San Francisco, CA 94107
+                            Koheda Road<br />
+                            Ibrahimpatnam <br />
+                            Rangareddy, Telangana 501510<br />
                             </p>
                         </motion.div>
                     </motion.div>
@@ -292,12 +326,7 @@ const Contact = () => {
                 </div>
             </div>
 
-            {/* Map Section */}
-            <div className="w-full h-96 bg-gray-200 relative">
-                <div className="absolute inset-0 flex items-center justify-center bg-gray-100">
-                    <p className="text-gray-500 text-lg">Interactive map would be displayed here</p>
-                </div>
-            </div>
+         
 
             {/* FAQ Section */}
             <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-24">

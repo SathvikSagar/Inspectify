@@ -25,6 +25,7 @@ const LoginPage = () => {
     e.preventDefault();
     setErrorMessage(""); // Clear previous errors
     setLoading(true);
+    console.log("Login attempt for:", email);
 
     // Save email if remember me is checked
     if (rememberMe) {
@@ -32,52 +33,53 @@ const LoginPage = () => {
     } else {
       localStorage.removeItem("rememberedEmail");
     }
-
-    // ✅ Check for authority login before hitting backend
+    
+    // SIMPLE ADMIN LOGIN - No verification needed
     if (email === "admin123@gmail.com" && password === "admin1234567890") {
-      // Generate a mock admin ID and store it
-      const adminId = "admin_" + Date.now();
-      localStorage.setItem("user", JSON.stringify({ email }));
-      localStorage.setItem("roadVisionUserId", adminId);
-      localStorage.setItem("roadVisionUserName", "Administrator");
+      console.log("Admin login detected - going directly to admin dashboard");
       
-      // Simulate network delay for better UX
-      setTimeout(() => {
-        setLoading(false);
-        navigate("/admin"); // ✅ Redirect to Authority page
-      }, 800);
+      // Store admin info in localStorage
+      localStorage.setItem("user", JSON.stringify({ email }));
+      localStorage.setItem("roadVisionUserId", "admin_" + Date.now());
+      localStorage.setItem("roadVisionUserName", "Administrator");
+      localStorage.setItem("roadVisionUserType", "admin");
+      localStorage.setItem("roadVisionIsAdmin", "true");
+      
+      // Go directly to admin dashboard
+      setLoading(false);
+      navigate("/admin");
       return;
     }
 
+    // For non-admin users, try server login
     try {
+      console.log("Sending login request to server...");
       const response = await fetch("http://localhost:5000/api/login", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ email, password }),
       });
 
+      console.log("Server response status:", response.status);
       const data = await response.json();
+      console.log("Server response data:", data);
 
       if (response.ok) {
-        // Store user information including ID and name
+        console.log("Login successful:", data);
+        // Store user information
         localStorage.setItem("user", JSON.stringify({ email }));
-        
-        // Store user ID and name for RoadVision app
-        if (data.userId) {
-          localStorage.setItem("roadVisionUserId", data.userId);
-        }
-        
-        if (data.name) {
-          localStorage.setItem("roadVisionUserName", data.name);
-        } else {
-          // If name is not provided, use email as fallback
-          const username = email.split('@')[0];
-          localStorage.setItem("roadVisionUserName", username);
-        }
+        localStorage.setItem("roadVisionUserId", data.userId || "user_" + Date.now());
+        localStorage.setItem("roadVisionUserName", data.name || email.split('@')[0]);
+        localStorage.setItem("roadVisionUserType", data.userType || "user");
+        localStorage.setItem("roadVisionIsAdmin", data.isAdmin ? "true" : "false");
         
         setLoading(false);
-        navigate("/user"); // ✅ Redirect to User page
+        
+        // Redirect to user dashboard
+        console.log("Redirecting to user dashboard");
+        navigate("/user");
       } else {
+        console.error("Login failed:", data.error);
         setLoading(false);
         setErrorMessage(data.error || "Invalid credentials. Please try again.");
       }

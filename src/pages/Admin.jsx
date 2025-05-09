@@ -47,31 +47,86 @@ const Admin = () => {
   useEffect(() => {
     const storedUserId = localStorage.getItem('roadVisionUserId');
     const storedUserName = localStorage.getItem('roadVisionUserName');
+    const storedUserType = localStorage.getItem('roadVisionUserType');
+    const storedIsAdmin = localStorage.getItem('roadVisionIsAdmin');
     
-    if (storedUserId) {
-      setUserId(storedUserId);
-      
-      // Check if user is admin and redirect if not
-      const isAdmin = storedUserId.startsWith('admin_');
-      if (!isAdmin) {
-        console.log("Non-admin user detected in Admin component, redirecting to user dashboard");
-        navigate('/user');
-      }
-    } else {
+    console.log("Admin component mounted with stored values:", {
+      userId: storedUserId,
+      userName: storedUserName,
+      userType: storedUserType,
+      isAdmin: storedIsAdmin
+    });
+    
+    if (!storedUserId) {
       // If no user ID is found, redirect to login
       console.log("No user ID found, redirecting to login");
       navigate('/');
+      return; // Stop execution to prevent setting state after redirect
     }
     
+    // Set user ID from localStorage
+    setUserId(storedUserId);
+    
+    // Set username if available
     if (storedUserName) {
       setUserName(storedUserName);
+    }
+    
+    // Check if user is admin by multiple indicators
+    const isAdmin = storedIsAdmin === 'true' || storedUserType === 'admin' || storedUserId.startsWith('admin_');
+    
+    // If not an admin user, redirect to user dashboard
+    if (!isAdmin) {
+      console.log("Non-admin user detected in Admin component, redirecting to user dashboard");
+      // Add a small delay to prevent potential redirect loops
+      setTimeout(() => {
+        navigate('/user');
+      }, 100);
+      return; // Stop execution to prevent setting state after redirect
+    }
+    
+    // If we get here, the user is an admin and should stay on this page
+    console.log("Admin user confirmed in Admin component");
+    
+    // Ensure localStorage has consistent admin values
+    if (storedUserType !== 'admin') {
+      localStorage.setItem('roadVisionUserType', 'admin');
+    }
+    if (storedIsAdmin !== 'true') {
+      localStorage.setItem('roadVisionIsAdmin', 'true');
+    }
+    
+    // Verify with server if needed (for non-prefix admin users)
+    if (!storedUserId.startsWith('admin_')) {
+      fetch('http://localhost:5000/api/verify-auth', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ userId: storedUserId })
+      })
+      .then(response => {
+        if (response.ok) {
+          return response.json().then(data => {
+            if (data.authenticated) {
+              console.log("Server verified admin status:", data);
+              // Update localStorage with server response
+              if (data.name) {
+                setUserName(data.name);
+                localStorage.setItem('roadVisionUserName', data.name);
+              }
+            }
+          });
+        }
+      })
+      .catch(error => {
+        console.error("Error verifying admin authentication:", error);
+      });
     }
   }, [navigate]);
   
   // Socket.IO connection for real-time notifications
   useEffect(() => {
-    // Only connect to socket.io if we have a userId
-    if (!userId) return;
+    // Only connect to socket.io if we have a userId and it's an admin
+    if (!userId || !userId.startsWith('admin_')) return;
     
     // Import socket.io-client dynamically
     import('socket.io-client').then(({ io }) => {
@@ -83,6 +138,17 @@ const Admin = () => {
         console.log('Socket.IO connected in Admin');
         // Authenticate with the server using userId
         socket.emit('authenticate', userId);
+      });
+      
+      // Handle authentication response
+      socket.on('auth_success', (data) => {
+        console.log('Socket authentication successful:', data.message);
+        // No redirection needed here - we're already on the admin page
+      });
+      
+      socket.on('auth_error', (data) => {
+        console.error('Socket authentication error:', data.message);
+        // Don't redirect on auth error, just log it
       });
       
       socket.on('connect_error', (error) => {

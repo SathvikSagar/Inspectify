@@ -125,11 +125,21 @@ const ViewFeed = () => {
   const handleStatusChange = async (id, isCompleted) => {
     try {
       setSubmitting(true);
+      
+      // Get the feedback to access the userId
+      const feedback = feedbacks.find(item => item._id === id);
+      if (!feedback) {
+        throw new Error('Feedback not found');
+      }
+      
       // API call to update feedback status
       const response = await fetch(`http://localhost:5000/api/feedbacks/${id}`, {
         method: 'PATCH',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ completed: isCompleted })
+        body: JSON.stringify({ 
+          completed: isCompleted,
+          userId: feedback.userId // Include userId to identify which user to notify
+        })
       });
       
       if (!response.ok) {
@@ -143,6 +153,31 @@ const ViewFeed = () => {
           item._id === id ? { ...item, completed: isCompleted } : item
         )
       );
+      
+      // Create a notification for the user
+      if (feedback.userId) {
+        try {
+          // Send notification to the user
+          await fetch('http://localhost:5000/api/user-notification', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+              userId: feedback.userId,
+              title: 'Feedback Status Updated',
+              message: `Your feedback "${feedback.subject}" has been marked as ${isCompleted ? 'completed' : 'pending'}.`,
+              type: 'feedback',
+              details: {
+                feedbackId: id,
+                status: isCompleted ? 'completed' : 'pending',
+                subject: feedback.subject
+              }
+            })
+          });
+          console.log('User notification sent successfully');
+        } catch (notificationError) {
+          console.error('Error sending user notification:', notificationError);
+        }
+      }
       
       showNotification(`Feedback marked as ${isCompleted ? 'completed' : 'pending'}`, 'success');
     } catch (err) {
@@ -175,13 +210,40 @@ const ViewFeed = () => {
           replyText,
           recipientEmail: replyModal.feedback.email,
           recipientName: replyModal.feedback.name,
-          senderEmail: 'venkatmadhu232@gmail.com' // Added sender email
+          senderEmail: 'venkatmadhu232@gmail.com', // Added sender email
+          userId: replyModal.feedback.userId // Include userId to identify which user to notify
         })
       });
       
       if (!response.ok) {
         const errorData = await response.json();
         throw new Error(errorData.error || 'Failed to send reply');
+      }
+      
+      // Send notification to the user if userId exists
+      if (replyModal.feedback.userId) {
+        try {
+          // Send notification to the user
+          await fetch('http://localhost:5000/api/user-notification', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+              userId: replyModal.feedback.userId,
+              title: 'New Reply to Your Feedback',
+              message: `You have received a reply to your feedback "${replyModal.feedback.subject}".`,
+              type: 'feedback_reply',
+              details: {
+                feedbackId: replyModal.feedback._id,
+                subject: replyModal.feedback.subject,
+                replyText: replyText,
+                replyDate: new Date()
+              }
+            })
+          });
+          console.log('User notification for reply sent successfully');
+        } catch (notificationError) {
+          console.error('Error sending user notification for reply:', notificationError);
+        }
       }
       
       // Mark as completed if not already
@@ -242,7 +304,7 @@ const ViewFeed = () => {
       {/* Sidebar Component */}
       <Sidebar activeTab={activeTab} userName={userName} userId={userId} />
       
-      <div className="flex-1 ml-64">
+      <div className="flex-1 pl-64">
         {/* Notification */}
         {notification.show && (
           <div 
@@ -318,11 +380,11 @@ const ViewFeed = () => {
 
         {/* Feedback List */}
         {filteredFeedbacks.length > 0 ? (
-          <div className="bg-white shadow overflow-hidden rounded-lg border border-gray-200">
-            <table className="min-w-full divide-y divide-gray-200">
+          <div className="bg-white shadow overflow-x-auto rounded-lg border border-gray-200">
+            <table className="min-w-full divide-y divide-gray-200 table-fixed">
               <thead className="bg-gray-50">
                 <tr>
-                  <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider cursor-pointer" onClick={() => toggleSort('name')}>
+                  <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider cursor-pointer w-1/6" onClick={() => toggleSort('name')}>
                     <div className="flex items-center space-x-1">
                       <User className="w-4 h-4" />
                       <span>Sender</span>
@@ -331,7 +393,7 @@ const ViewFeed = () => {
                       )}
                     </div>
                   </th>
-                  <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider cursor-pointer" onClick={() => toggleSort('subject')}>
+                  <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider cursor-pointer w-2/6" onClick={() => toggleSort('subject')}>
                     <div className="flex items-center space-x-1">
                       <Inbox className="w-4 h-4" />
                       <span>Subject</span>
@@ -340,7 +402,7 @@ const ViewFeed = () => {
                       )}
                     </div>
                   </th>
-                  <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider cursor-pointer" onClick={() => toggleSort('dateSubmitted')}>
+                  <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider cursor-pointer w-1/6" onClick={() => toggleSort('dateSubmitted')}>
                     <div className="flex items-center space-x-1">
                       <Calendar className="w-4 h-4" />
                       <span>Date</span>
@@ -349,10 +411,10 @@ const ViewFeed = () => {
                       )}
                     </div>
                   </th>
-                  <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                  <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider w-1/12">
                     Status
                   </th>
-                  <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                  <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider w-1/6">
                     Actions
                   </th>
                 </tr>
@@ -383,11 +445,11 @@ const ViewFeed = () => {
                       </span>
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap text-sm">
-                      <div className="flex items-center space-x-3">
+                      <div className="flex flex-wrap gap-2">
                         <button
                           onClick={() => handleStatusChange(feedback._id, !feedback.completed)}
                           disabled={submitting}
-                          className={`inline-flex items-center px-2.5 py-1.5 border text-xs font-medium rounded ${
+                          className={`inline-flex items-center px-2 py-1 border text-xs font-medium rounded ${
                             feedback.completed 
                               ? 'border-gray-300 bg-white text-gray-700 hover:bg-gray-50' 
                               : 'border-green-600 bg-green-600 text-white hover:bg-green-700'
@@ -398,7 +460,7 @@ const ViewFeed = () => {
                         </button>
                         <button
                           onClick={() => openReplyModal(feedback)}
-                          className="inline-flex items-center px-2.5 py-1.5 border border-blue-600 bg-blue-600 text-xs font-medium rounded text-white hover:bg-blue-700"
+                          className="inline-flex items-center px-2 py-1 border border-blue-600 bg-blue-600 text-xs font-medium rounded text-white hover:bg-blue-700"
                         >
                           <Mail className="w-3 h-3 mr-1" />
                           Reply

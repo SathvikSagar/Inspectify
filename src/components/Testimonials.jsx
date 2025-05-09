@@ -95,6 +95,7 @@ const Testimonials = () => {
 
         {/* Large quote icon */}
         <div className="absolute top-40 left-0 opacity-5 z-0">
+
           <Quote size={300} />
         </div>
 
@@ -218,7 +219,7 @@ const Testimonials = () => {
                   "The AI detection accuracy is remarkable. We've reduced our inspection costs by 60% while increasing the frequency of our road assessments. This technology is truly transformative for urban infrastructure management."
                 </p>
                 <div>
-                  <p className="font-bold text-gray-900 text-lg">Dr. Rajesh Mehta</p>
+                  <p className="font-bold text-gray-900 text-lg">Mr. Satvik Mehta</p>
                   <p className="text-green-700">Director of Infrastructure, National Highways Authority</p>
                 </div>
               </div>

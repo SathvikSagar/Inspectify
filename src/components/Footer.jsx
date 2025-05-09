@@ -10,7 +10,7 @@ const Footer = () => {
           {/* Company Info */}
           <div className="md:col-span-1">
             <div className="mb-4">
-              <h2 className="text-xl font-bold text-gray-900 mb-1">RoadInspect AI</h2>
+              <h2 className="text-xl font-bold text-gray-900 mb-1">Inspectify</h2>
               <p className="text-green-600 text-sm font-medium">AI Road Damage Detection</p>
             </div>
             <p className="text-gray-600 text-sm mb-4">

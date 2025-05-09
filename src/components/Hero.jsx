@@ -1,6 +1,14 @@
 import React from 'react';
+import { useNavigate } from 'react-router-dom';
 import StyledButton from "./StyledButton"; 
+
 const Hero = () => {
+  const navigate = useNavigate();
+
+  const handleDemoClick = () => {
+    navigate('/demo');
+  };
+
   return (
     <section
       className="py-20 px-6 md:px-12 lg:px-24 flex flex-col md:flex-row items-center justify-between"
@@ -17,7 +25,7 @@ const Hero = () => {
           AI-driven damage detection and prioritization system to simplify road inspections and boost infrastructure safety.
         </p>
        
-      <StyledButton >
+      <StyledButton onClick={handleDemoClick}>
         Start a demo
       </StyledButton>
       </div>

@@ -1,45 +1,274 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import Footer from "../components/Footer";
-import { Eye, EyeOff, Mail, Lock, User, AlertCircle, UserPlus } from "lucide-react";
+import { Eye, EyeOff, Mail, Lock, User, AlertCircle, UserPlus, CheckCircle, KeyRound } from "lucide-react";
+import emailjs from '@emailjs/browser';
+import { storeOTP, verifyOTP, removeOTP } from "../utils/otpUtils";
+
+// Initialize EmailJS with your public key
+emailjs.init("e2ywgLyBWrbsCxIw9");
 
 const SignupPage = () => {
   const [name, setName] = useState("");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
+  const [otp, setOtp] = useState("");
   const [showPassword, setShowPassword] = useState(false);
   const [loading, setLoading] = useState(false);
   const [errorMessage, setErrorMessage] = useState("");
+  const [successMessage, setSuccessMessage] = useState("");
+  const [showOtpForm, setShowOtpForm] = useState(false);
+  const [otpSent, setOtpSent] = useState(false);
+  const [countdown, setCountdown] = useState(0);
   const navigate = useNavigate();
 
-  const handleSignup = async (e) => {
+  // Countdown timer for OTP resend
+  useEffect(() => {
+    if (countdown > 0) {
+      const timer = setTimeout(() => setCountdown(countdown - 1), 1000);
+      return () => clearTimeout(timer);
+    }
+  }, [countdown]);
+
+  // Function to send OTP via email using EmailJS
+  const sendOtpEmail = async (otpCode) => {
+    try {
+      // Log the OTP to the console for debugging
+      console.log(`OTP for ${email}: ${otpCode}`);
+      
+      // Prepare the template parameters with common parameter names
+      const templateParams = {
+        to_name: name,
+        to_email: email,
+        from_name: "SafeStreet App",
+        message: `Your verification code is: ${otpCode}`,
+        subject: "Your Verification Code",
+        otp: otpCode // Add OTP as a separate parameter for template
+      };
+      
+      console.log('Sending email with parameters:', {
+        service_id: 'service_wbi1a36',
+        template_id: 'template_073bu4c',
+        template_params: templateParams
+      });
+      
+      // Send the email using EmailJS
+      const response = await emailjs.send(
+        'service_wbi1a36',    // Your EmailJS service ID
+        'template_073bu4c',   // Your specific OTP template ID
+        templateParams
+      );
+      
+      console.log('Email sent successfully:', response);
+      
+      // Success message for the user
+      setSuccessMessage(`Verification code sent to ${email}. Please check your inbox and spam folder.`);
+      
+      return true;
+    } catch (error) {
+      console.error("Error sending OTP email:", error);
+      
+      // For development/testing, still show the OTP in the UI if email sending fails
+      setSuccessMessage(`Your verification code is: ${otpCode}`);
+      
+      // Log detailed error information
+      if (error.status) {
+        console.error(`EmailJS Status: ${error.status}, Text: ${error.text}`);
+      }
+      
+      return true; // Return true to continue the flow even if email fails
+    }
+  };
+
+  // Request OTP
+  const handleRequestOtp = async (e) => {
     e.preventDefault();
     setLoading(true);
     setErrorMessage("");
+    setSuccessMessage("");
+
+    if (!name || !email || !password) {
+      setErrorMessage("All fields are required");
+      setLoading(false);
+      return;
+    }
 
     try {
-      const response = await fetch("http://localhost:5000/api/signup", {
+      // Log the request for debugging
+      console.log("Requesting OTP from server for:", { name, email });
+      
+      // Request OTP from the server
+      const response = await fetch("http://localhost:5000/api/generate-otp", {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
+        headers: { 
+          "Content-Type": "application/json",
+          "Accept": "application/json"
+        },
         body: JSON.stringify({ name, email, password }),
       });
-
+      
       const data = await response.json();
-
+      console.log("Server response:", data);
+      
       if (response.ok) {
-        // Simulate network delay for better UX
-        setTimeout(() => {
-          setLoading(false);
-          navigate("/login"); // Redirect to login page
-        }, 800);
+        // Check if email was sent successfully
+        if (data.emailSent) {
+          setSuccessMessage(`Verification code sent to ${email}. Please check your inbox and spam folder.`);
+        } else {
+          // If email sending failed but OTP was generated
+          if (data.otp) {
+            setSuccessMessage(`Email sending failed. Your verification code is: ${data.otp}`);
+          } else {
+            setSuccessMessage("Verification code generated but email sending failed. Please try again.");
+          }
+        }
+        
+        // For development, if OTP is returned in the response, store it locally
+        if (data.otp) {
+          storeOTP(email, name, password, data.otp);
+        }
+        
+        // Show OTP form
+        setShowOtpForm(true);
+        setOtpSent(true);
+        setCountdown(60); // 60 seconds countdown for resend
       } else {
-        setLoading(false);
-        setErrorMessage(data.error || "Signup failed. Please try again.");
+        setErrorMessage(data.error || "Failed to generate OTP. Please try again.");
       }
-    } catch (error) {
-      console.error("Signup Error:", error);
+      
       setLoading(false);
-      setErrorMessage("Server error. Please try again later.");
+    } catch (error) {
+      console.error("OTP Request Error:", error);
+      setLoading(false);
+      setErrorMessage("Error connecting to server. Please try again.");
+    }
+  };
+
+  // Verify OTP and complete signup
+  const handleVerifyOtp = async (e) => {
+    e.preventDefault();
+    setLoading(true);
+    setErrorMessage("");
+    setSuccessMessage("");
+
+    try {
+      // First try to verify OTP locally (for development fallback)
+      console.log("Verifying OTP locally first:", { email, otp });
+      const localResult = verifyOTP(email, otp);
+      console.log("Local OTP verification result:", localResult);
+
+      if (localResult.valid) {
+        // OTP is valid locally, create the user
+        try {
+          const { name, email, password } = localResult.userData;
+          
+          // Create user in the backend
+          const response = await fetch("http://localhost:5000/api/signup", {
+            method: "POST",
+            headers: { 
+              "Content-Type": "application/json",
+              "Accept": "application/json"
+            },
+            body: JSON.stringify({ name, email, password }),
+          });
+          
+          console.log("Signup response status:", response.status);
+          
+          const data = await response.json();
+          console.log("Signup response data:", data);
+          
+          if (response.ok) {
+            // Remove the OTP after successful verification
+            removeOTP(email);
+            
+            setSuccessMessage("Signup successful! Redirecting to login...");
+            
+            // Redirect to login page after successful verification
+            setTimeout(() => {
+              navigate("/login");
+            }, 2000);
+          } else {
+            setErrorMessage(data.error || "Signup failed. Please try again.");
+          }
+        } catch (error) {
+          console.error("Signup Error:", error);
+          setErrorMessage("Error creating user. Please try again.");
+        }
+      } else {
+        // If local verification fails, try server verification
+        try {
+          console.log("Trying server OTP verification:", { email, otp });
+          
+          // Verify OTP with the server
+          const verifyResponse = await fetch("http://localhost:5000/api/verify-otp", {
+            method: "POST",
+            headers: { 
+              "Content-Type": "application/json",
+              "Accept": "application/json"
+            },
+            body: JSON.stringify({ email, otp }),
+          });
+          
+          const verifyData = await verifyResponse.json();
+          console.log("Server OTP verification response:", verifyData);
+          
+          if (verifyResponse.ok) {
+            setSuccessMessage("Signup successful! Redirecting to login...");
+            
+            // Redirect to login page after successful verification
+            setTimeout(() => {
+              navigate("/login");
+            }, 2000);
+          } else {
+            setErrorMessage(verifyData.error || "OTP verification failed. Please try again.");
+          }
+        } catch (serverError) {
+          console.error("Server OTP Verification Error:", serverError);
+          setErrorMessage("Error connecting to server. Please try again.");
+        }
+      }
+      
+      setLoading(false);
+    } catch (error) {
+      console.error("OTP Verification Error:", error);
+      setLoading(false);
+      setErrorMessage("Error during OTP verification.");
+    }
+  };
+
+  // Resend OTP
+  const handleResendOtp = async () => {
+    if (countdown > 0) return; // Prevent resend if countdown is active
+    
+    setLoading(true);
+    setErrorMessage("");
+    setSuccessMessage("");
+
+    try {
+      // Log resend attempt for debugging
+      console.log("Resending OTP locally for:", { email, name });
+      
+      // Generate new OTP locally
+      const otp = storeOTP(email, name, password);
+      console.log("New OTP generated:", otp);
+      
+      // Always show the OTP in the UI for testing
+      setSuccessMessage(`Your new verification code is: ${otp}`);
+      
+      try {
+        // Try to send the OTP via email (this will likely fail, but we'll try anyway)
+        await sendOtpEmail(otp);
+      } catch (emailError) {
+        console.error("Email sending failed, but continuing with OTP flow:", emailError);
+        // Email failed, but we've already shown the OTP in the UI
+      }
+      
+      setCountdown(60); // Reset countdown
+      setLoading(false);
+    } catch (error) {
+      console.error("Resend OTP Error:", error);
+      setLoading(false);
+      setErrorMessage("Error generating new OTP. Please try again.");
     }
   };
 
@@ -55,99 +284,186 @@ const SignupPage = () => {
               <p className="text-gray-600">Join us to start reporting road issues</p>
             </div>
 
-            {/* Signup Form */}
-            <form className="space-y-6" onSubmit={handleSignup}>
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">Full Name</label>
-                <div className="relative">
-                  <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-                    <User size={18} className="text-gray-400" />
-                  </div>
-                  <input
-                    type="text"
-                    value={name}
-                    onChange={(e) => setName(e.target.value)}
-                    className="w-full pl-10 pr-4 py-3 border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all"
-                    placeholder="Your full name"
-                    required
-                  />
-                </div>
+            {/* Success Message */}
+            {successMessage && (
+              <div className="bg-green-50 border-l-4 border-green-500 p-4 rounded-md flex items-start mb-6">
+                <CheckCircle className="text-green-500 mr-2 flex-shrink-0 mt-0.5" size={16} />
+                <p className="text-sm text-green-700">{successMessage}</p>
               </div>
+            )}
 
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">Email</label>
-                <div className="relative">
-                  <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-                    <Mail size={18} className="text-gray-400" />
-                  </div>
-                  <input
-                    type="email"
-                    value={email}
-                    onChange={(e) => setEmail(e.target.value)}
-                    className="w-full pl-10 pr-4 py-3 border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all"
-                    placeholder="you@example.com"
-                    required
-                  />
-                </div>
+            {/* Error Message */}
+            {errorMessage && (
+              <div className="bg-red-50 border-l-4 border-red-500 p-4 rounded-md flex items-start mb-6">
+                <AlertCircle className="text-red-500 mr-2 flex-shrink-0 mt-0.5" size={16} />
+                <p className="text-sm text-red-700">{errorMessage}</p>
               </div>
+            )}
 
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">Password</label>
-                <div className="relative">
-                  <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-                    <Lock size={18} className="text-gray-400" />
+            {/* OTP Verification Form */}
+            {showOtpForm ? (
+              <form className="space-y-6" onSubmit={handleVerifyOtp}>
+                <div className="bg-blue-50 p-4 rounded-lg mb-4">
+                  <p className="text-sm text-blue-700">
+                    We've sent a verification code to <strong>{email}</strong>. 
+                    Please check your email (including spam folder) and enter the code below to complete your registration.
+                  </p>
+                </div>
+                
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">Verification Code</label>
+                  <div className="relative">
+                    <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                      <KeyRound size={18} className="text-gray-400" />
+                    </div>
+                    <input
+                      type="text"
+                      value={otp}
+                      onChange={(e) => setOtp(e.target.value)}
+                      className="w-full pl-10 pr-4 py-3 border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all"
+                      placeholder="Enter 6-digit code"
+                      maxLength={6}
+                      required
+                    />
                   </div>
-                  <input
-                    type={showPassword ? "text" : "password"}
-                    value={password}
-                    onChange={(e) => setPassword(e.target.value)}
-                    className="w-full pl-10 pr-10 py-3 border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all"
-                    placeholder="Create a strong password"
-                    required
-                  />
-                  <button 
-                    type="button"
-                    className="absolute inset-y-0 right-0 pr-3 flex items-center"
-                    onClick={() => setShowPassword(!showPassword)}
+                </div>
+
+                <div className="flex flex-col space-y-4">
+                  <button
+                    type="submit"
+                    disabled={loading}
+                    className="w-full flex justify-center items-center py-3 px-4 border border-transparent rounded-xl shadow-sm text-sm font-medium text-white bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 transition-all"
                   >
-                    {showPassword ? (
-                      <EyeOff size={18} className="text-gray-400 hover:text-gray-600" />
+                    {loading ? (
+                      <>
+                        <svg className="animate-spin -ml-1 mr-2 h-4 w-4 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                          <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                          <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                        </svg>
+                        Verifying...
+                      </>
                     ) : (
-                      <Eye size={18} className="text-gray-400 hover:text-gray-600" />
+                      <>
+                        <CheckCircle size={18} className="mr-2" />
+                        Verify & Complete Signup
+                      </>
                     )}
                   </button>
+                  
+                  <button
+                    type="button"
+                    onClick={handleResendOtp}
+                    disabled={loading || countdown > 0}
+                    className="text-blue-600 hover:text-blue-800 text-sm font-medium"
+                  >
+                    {countdown > 0 
+                      ? `Resend code in ${countdown}s` 
+                      : "Didn't receive the code? Resend"}
+                  </button>
+                  
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setShowOtpForm(false);
+                      setOtp("");
+                      setErrorMessage("");
+                      setSuccessMessage("");
+                    }}
+                    className="text-gray-500 hover:text-gray-700 text-sm"
+                  >
+                    Back to signup
+                  </button>
                 </div>
-                <p className="text-xs text-gray-500 mt-1">Password must be at least 8 characters long</p>
-              </div>
-
-              {errorMessage && (
-                <div className="bg-red-50 border-l-4 border-red-500 p-4 rounded-md flex items-start">
-                  <AlertCircle className="text-red-500 mr-2 flex-shrink-0 mt-0.5" size={16} />
-                  <p className="text-sm text-red-700">{errorMessage}</p>
+              </form>
+            ) : (
+              /* Initial Signup Form */
+              <form className="space-y-6" onSubmit={handleRequestOtp}>
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">Full Name</label>
+                  <div className="relative">
+                    <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                      <User size={18} className="text-gray-400" />
+                    </div>
+                    <input
+                      type="text"
+                      value={name}
+                      onChange={(e) => setName(e.target.value)}
+                      className="w-full pl-10 pr-4 py-3 border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all"
+                      placeholder="Your full name"
+                      required
+                    />
+                  </div>
                 </div>
-              )}
 
-              <button
-                type="submit"
-                disabled={loading}
-                className="w-full flex justify-center items-center py-3 px-4 border border-transparent rounded-xl shadow-sm text-sm font-medium text-white bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 transition-all"
-              >
-                {loading ? (
-                  <>
-                    <svg className="animate-spin -ml-1 mr-2 h-4 w-4 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
-                      <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
-                      <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
-                    </svg>
-                    Creating account...
-                  </>
-                ) : (
-                  <>
-                    <UserPlus size={18} className="mr-2" />
-                    Create Account
-                  </>
-                )}
-              </button>
-            </form>
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">Email</label>
+                  <div className="relative">
+                    <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                      <Mail size={18} className="text-gray-400" />
+                    </div>
+                    <input
+                      type="email"
+                      value={email}
+                      onChange={(e) => setEmail(e.target.value)}
+                      className="w-full pl-10 pr-4 py-3 border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all"
+                      placeholder="you@example.com"
+                      required
+                    />
+                  </div>
+                </div>
+
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">Password</label>
+                  <div className="relative">
+                    <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                      <Lock size={18} className="text-gray-400" />
+                    </div>
+                    <input
+                      type={showPassword ? "text" : "password"}
+                      value={password}
+                      onChange={(e) => setPassword(e.target.value)}
+                      className="w-full pl-10 pr-10 py-3 border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all"
+                      placeholder="Create a strong password"
+                      required
+                      minLength={8}
+                    />
+                    <button 
+                      type="button"
+                      className="absolute inset-y-0 right-0 pr-3 flex items-center"
+                      onClick={() => setShowPassword(!showPassword)}
+                    >
+                      {showPassword ? (
+                        <EyeOff size={18} className="text-gray-400 hover:text-gray-600" />
+                      ) : (
+                        <Eye size={18} className="text-gray-400 hover:text-gray-600" />
+                      )}
+                    </button>
+                  </div>
+                  <p className="text-xs text-gray-500 mt-1">Password must be at least 8 characters long</p>
+                </div>
+
+                <button
+                  type="submit"
+                  disabled={loading}
+                  className="w-full flex justify-center items-center py-3 px-4 border border-transparent rounded-xl shadow-sm text-sm font-medium text-white bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 transition-all"
+                >
+                  {loading ? (
+                    <>
+                      <svg className="animate-spin -ml-1 mr-2 h-4 w-4 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                        <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                        <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                      </svg>
+                      Sending verification code...
+                    </>
+                  ) : (
+                    <>
+                      <UserPlus size={18} className="mr-2" />
+                      Continue with Email Verification
+                    </>
+                  )}
+                </button>
+              </form>
+            )}
 
             <div className="mt-8">
               <div className="relative">
