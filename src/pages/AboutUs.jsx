@@ -58,7 +58,7 @@ export default function AboutUs() {
           <div className="flex flex-wrap gap-4">
             <Link to="/signup">
               <button className="bg-gradient-to-r from-green-600 to-teal-600 hover:from-green-700 hover:to-teal-700 text-white px-8 py-4 rounded-xl font-semibold shadow-lg transition-all hover:-translate-y-1">
-                Start Free Trial →
+                Start now →
               </button>
             </Link>
             <Link to="/contact">
@@ -219,7 +219,7 @@ export default function AboutUs() {
                 Join hundreds of municipalities already using our platform to make their roads safer and maintenance more efficient.
               </p>
               <ul className="space-y-2 mb-8">
-                {["Free 14-day trial", "No credit card required", "Full feature access"].map((item, i) => (
+                {["AI-powered road inspections", "Real-time monitoring", "Instant results", "Cost-effective solutions "].map((item, i) => (
                   <li key={i} className="flex items-center">
                     <CheckCircle className="h-5 w-5 mr-2 text-green-300" />
                     <span>{item}</span>
@@ -230,17 +230,17 @@ export default function AboutUs() {
             <div className="p-8 md:p-12 flex flex-col justify-center">
               <h4 className="text-2xl font-bold text-gray-900 mb-4">Get Started Today</h4>
               <p className="text-gray-600 mb-6">
-                Schedule a demo or start your free trial to see how our platform can work for your city.
+                Start a demo or start your journey to see how our platform can work for your city.
               </p>
               <div className="space-y-3">
                 <Link to="/signup" className="block">
                   <button className="w-full bg-gradient-to-r from-green-600 to-teal-600 hover:from-green-700 hover:to-teal-700 text-white px-6 py-3 rounded-xl font-semibold shadow-md transition-all">
-                    Start Free Trial
+                    Start now !
                   </button>
                 </Link>
                 <Link to="/contact" className="block">
                   <button className="w-full bg-white border border-gray-300 text-gray-700 hover:text-green-700 hover:border-green-300 px-6 py-3 rounded-xl font-semibold transition-all">
-                    Schedule a Demo
+                    Start a Demo
                   </button>
                 </Link>
               </div>

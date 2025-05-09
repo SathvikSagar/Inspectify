@@ -510,63 +510,8 @@ const Dashboard = () => {
           const parsedNotifications = JSON.parse(savedNotifications);
           setNotifications(parsedNotifications);
           
-          // If we have no notifications, create some demo data
-          if (parsedNotifications.length === 0) {
-            // Create demo notifications for testing
-            const demoNotifications = [
-              {
-                id: Date.now() - 1000,
-                type: 'review',
-                title: 'Report Approved',
-                message: 'Your road damage report has been approved',
-                details: { status: 'approved', action: 'repair scheduled' },
-                timestamp: Date.now() - 1000,
-                read: false
-              },
-              {
-                id: Date.now() - 2000,
-                type: 'review',
-                title: 'Report Pending',
-                message: 'Your road damage report is under review',
-                details: { status: 'pending' },
-                timestamp: Date.now() - 2000,
-                read: true
-              },
-              {
-                id: Date.now() - 3000,
-                type: 'review',
-                title: 'Repair Completed',
-                message: 'Repair work has been completed',
-                details: { status: 'approved', action: 'repair completed' },
-                timestamp: Date.now() - 3000,
-                read: true
-              },
-              // Add demo feedback notifications
-              {
-                id: Date.now() - 4000,
-                type: 'feedback_status',
-                title: 'Feedback Reviewed',
-                message: 'Your feedback has been reviewed by an administrator',
-                details: { status: 'completed', subject: 'Website Suggestion' },
-                timestamp: Date.now() - 4000,
-                read: true
-              },
-              {
-                id: Date.now() - 5000,
-                type: 'feedback_reply',
-                title: 'New Reply to Your Feedback',
-                message: 'You have received a reply to your feedback',
-                details: { 
-                  subject: 'App Performance Issue', 
-                  replyText: 'Thank you for reporting this issue. We have fixed the performance problem in our latest update.' 
-                },
-                timestamp: Date.now() - 5000,
-                read: false
-              }
-            ];
-            setNotifications(demoNotifications);
-            localStorage.setItem(`roadVisionNotifications_${userId}`, JSON.stringify(demoNotifications));
-          }
+          // Keep empty notifications array as is - no need to create demo data
+          // This ensures new users start with zero notifications
         } catch (error) {
           console.error('Error parsing saved notifications:', error);
           // Create fallback notifications
@@ -575,60 +520,10 @@ const Dashboard = () => {
           localStorage.setItem(`roadVisionNotifications_${userId}`, JSON.stringify(fallbackNotifications));
         }
       } else {
-        // If no notifications exist yet, create some demo data
-        const demoNotifications = [
-          {
-            id: Date.now() - 1000,
-            type: 'review',
-            title: 'Report Approved',
-            message: 'Your road damage report has been approved',
-            details: { status: 'approved', action: 'repair scheduled' },
-            timestamp: Date.now() - 1000,
-            read: false
-          },
-          {
-            id: Date.now() - 2000,
-            type: 'review',
-            title: 'Report Pending',
-            message: 'Your road damage report is under review',
-            details: { status: 'pending' },
-            timestamp: Date.now() - 2000,
-            read: true
-          },
-          {
-            id: Date.now() - 3000,
-            type: 'review',
-            title: 'Repair Completed',
-            message: 'Repair work has been completed',
-            details: { status: 'approved', action: 'repair completed' },
-            timestamp: Date.now() - 3000,
-            read: true
-          },
-          // Add demo feedback notifications
-          {
-            id: Date.now() - 4000,
-            type: 'feedback_status',
-            title: 'Feedback Reviewed',
-            message: 'Your feedback has been reviewed by an administrator',
-            details: { status: 'completed', subject: 'Website Suggestion' },
-            timestamp: Date.now() - 4000,
-            read: true
-          },
-          {
-            id: Date.now() - 5000,
-            type: 'feedback_reply',
-            title: 'New Reply to Your Feedback',
-            message: 'You have received a reply to your feedback',
-            details: { 
-              subject: 'App Performance Issue', 
-              replyText: 'Thank you for reporting this issue. We have fixed the performance problem in our latest update.' 
-            },
-            timestamp: Date.now() - 5000,
-            read: false
-          }
-        ];
-        setNotifications(demoNotifications);
-        localStorage.setItem(`roadVisionNotifications_${userId}`, JSON.stringify(demoNotifications));
+        // If no notifications exist yet, initialize with an empty array
+        const emptyNotifications = [];
+        setNotifications(emptyNotifications);
+        localStorage.setItem(`roadVisionNotifications_${userId}`, JSON.stringify(emptyNotifications));
       }
     }
   }, [userId]);
@@ -748,14 +643,14 @@ const Dashboard = () => {
       } else {
         console.log('Using calculated stats from notifications');
         
-        // If API fails, use mock data for demo purposes
+        // If API fails and there are no notifications, use zeros for stats
         if (notifications.length === 0) {
-          // Use demo data if no notifications exist
+          // Use zeros for new users with no notifications
           newStats = {
-            approved: Math.floor(Math.random() * 10) + 5,
-            pending: Math.floor(Math.random() * 8) + 3,
-            completed: Math.floor(Math.random() * 7) + 2,
-            rejected: Math.floor(Math.random() * 4) + 1
+            approved: 0,
+            pending: 0,
+            completed: 0,
+            rejected: 0
           };
           setRoadStats(newStats);
         } else {
@@ -797,16 +692,16 @@ const Dashboard = () => {
       }
     } catch (error) {
       console.error('Error fetching road statistics:', error);
-      // Use demo data for fallback
+      // Use zeros for fallback for new users
       setRoadStats(prevStats => {
-        // Only set demo data if current stats are all zeros
+        // Only set zeros if current stats are all zeros
         if (prevStats.approved === 0 && prevStats.pending === 0 && 
             prevStats.completed === 0 && prevStats.rejected === 0) {
           const newStats = {
-            approved: Math.floor(Math.random() * 10) + 5,
-            pending: Math.floor(Math.random() * 8) + 3,
-            completed: Math.floor(Math.random() * 7) + 2,
-            rejected: Math.floor(Math.random() * 4) + 1
+            approved: 0,
+            pending: 0,
+            completed: 0,
+            rejected: 0
           };
           
           // Generate historical data
@@ -1642,8 +1537,8 @@ const Dashboard = () => {
               <div className="flex-1">
                 <h4 className="text-xl font-bold text-gray-900">
                   {prediction.label.toLowerCase() === "road"
-                    ? "✓ Road Detected"
-                    : "✗ Not a Road"}
+                    ? "Road Detected"
+                    : "Not a Road"}
                 </h4>
                 <p className="text-sm mt-2 text-gray-700">
                   {prediction.label.toLowerCase() === "road"
@@ -1665,16 +1560,13 @@ const Dashboard = () => {
                     </div>
                     
                     <div className="bg-gray-50 p-3 rounded-lg">
-                      <p className="text-xs text-gray-500 mb-1">Saved to Database</p>
-                      <p className="text-blue-600 font-medium">{prediction.saved ? "Yes" : "No"}</p>
-                    </div>
+                     </div>
                   </div>
                   
                   {prediction.label.toLowerCase() === "road" && (
-                    <div className="mt-4 bg-blue-50 p-3 rounded-lg border border-blue-100">
-                      <p className="text-blue-800 text-sm">
-                        <span className="font-medium">Next Steps:</span> You can now proceed to analyze this road for issues or save it for future reference.
-                      </p>
+                    <div className="mt-4 bg-blue-50 p-3 rounded-lg border border-green-100">
+                      <p className="text-green-800 text-sm">
+                       </p>
                     </div>
                   )}
                   

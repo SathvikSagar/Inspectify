@@ -84,12 +84,10 @@ const Sidebar = ({ activeTab, userName, userId }) => {
     <div className="w-64 min-w-[16rem] bg-white shadow-lg h-screen fixed left-0 top-0 overflow-y-auto z-30">
       {/* Logo and Welcome */}
       <div className="p-6">
-        <div className="bg-gradient-to-r from-blue-600 to-green-500 p-3 rounded-lg mb-4 flex items-center gap-3">
-          <div className="bg-white p-1.5 rounded-lg">
-            <Camera size={20} className="text-green-700" />
+          <div className="flex items-center gap-2">
+            <img src="/logo.png" alt="Inspectify Logo" className="w-8 h-8" />
+            <h1 className="text-gray-800 font-bold text-xl">Inspectify</h1>
           </div>
-          <h1 className="text-white font-bold text-xl">RoadVision</h1>
-        </div>
         
         {userName && (
           <div className="bg-gray-50 rounded-lg p-3 mb-6">
@@ -129,7 +127,7 @@ const Sidebar = ({ activeTab, userName, userId }) => {
       <div className="px-6 mt-8 mb-6">
         <div className="border-t border-gray-200 pt-4">
           <p className="text-xs text-gray-500">
-            &copy; {new Date().getFullYear()} RoadVision
+            &copy; {new Date().getFullYear()} Inspectify
             <br />
             Version 1.0.0
           </p>

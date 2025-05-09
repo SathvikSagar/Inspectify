@@ -62,7 +62,7 @@ const LoginPage = () => {
         // Store user information including ID and name
         localStorage.setItem("user", JSON.stringify({ email }));
         
-        // Store user ID and name for RoadVision app
+        // Store user ID and name for Inspectify app
         if (data.userId) {
           localStorage.setItem("roadVisionUserId", data.userId);
         }
@@ -104,7 +104,7 @@ const LoginPage = () => {
                     <path d="M20 7L12 12L4 7" stroke="white" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
                   </svg>
                 </div>
-                <h1 className="text-2xl font-bold text-gray-800">RoadVision</h1>
+                <h1 className="text-2xl font-bold text-gray-800">Inspectify</h1>
               </div>
               <h2 className="text-3xl font-bold text-gray-800 mb-2">Welcome Back</h2>
               <p className="text-gray-600">Login to continue to your dashboard</p>
@@ -303,7 +303,7 @@ const LoginPage = () => {
                     </svg>
                   </div>
                   <div>
-                    <p className="text-white font-medium">"RoadVision has transformed how we manage road maintenance in our city."</p>
+                    <p className="text-white font-medium">"Inspectify has transformed how we manage road maintenance in our city."</p>
                     <p className="text-blue-200 text-sm mt-1">- City Infrastructure Manager</p>
                   </div>
                 </div>

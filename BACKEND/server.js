@@ -14,7 +14,7 @@ import nodemailer from "nodemailer";
 dotenv.config();
 
 const PORT = 5000;
-const MONGO_URI = process.env.MONGO_URI || "mongodb://localhost:27017/Safestreet";
+const MONGO_URI = process.env.MONGO_URI || "mongodb://localhost:27017/Inspectify";
 const __dirname = path.resolve();
 
 const app = express();
@@ -751,10 +751,16 @@ app.patch("/api/feedbacks/:id", async (req, res) => {
 // Create a nodemailer transporter
 const transporter = nodemailer.createTransport({
   service: 'gmail',
+  host: 'smtp.gmail.com',
+  port: 465,
+  secure: true,
   auth: {
     user: 'venkatmadhu232@gmail.com',
-    pass: process.env.EMAIL_PASSWORD // Using app password from .env file
+    pass: process.env.EMAIL_PASSWORD // Using app password from .env file (ajndrrtnrmknvcaj)
   },
+  // Debug options to help troubleshoot email issues
+  debug: true,
+  logger: true,
   // Debug options to help troubleshoot email issues
   debug: true,
   logger: true
@@ -772,7 +778,7 @@ app.post("/api/feedbacks/:id/reply", async (req, res) => {
     
     // Prepare email options
     const mailOptions = {
-      from: senderEmail || 'venkatmadhu232@gmail.com',
+      from: '"Inspectify" <venkatmadhu232@gmail.com>',
       to: recipientEmail,
       subject: `Re: ${feedback.subject || 'Your Feedback'}`,
       html: `
@@ -928,25 +934,79 @@ app.post("/api/generate-otp", async (req, res) => {
     try {
       console.log("Attempting to send OTP email to:", email);
       
-      // Prepare email options
+      // Prepare email options with professional design
       const mailOptions = {
-        from: '"SafeStreet App" <venkatmadhu232@gmail.com>',
+        from: '"Inspectify" <venkatmadhu232@gmail.com>',
         to: email,
-        subject: 'Your SafeStreet App Verification Code',
+        subject: 'Your Inspectify Verification Code',
         html: `
-          <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px; border: 1px solid #e0e0e0; border-radius: 5px;">
-            <h2 style="color: #333;">Hello ${name || 'User'},</h2>
-            <p style="color: #555; line-height: 1.6;">Thank you for signing up with SafeStreet App. Here's your verification code:</p>
-            <div style="background-color: #f9f9f9; padding: 15px; border-left: 4px solid #4a90e2; margin: 20px 0; text-align: center;">
-              <h1 style="color: #4a90e2; font-size: 32px; letter-spacing: 5px;">${otp}</h1>
-            </div>
-            <p style="color: #555;">This code will expire in 10 minutes.</p>
-            <hr style="border: none; border-top: 1px solid #e0e0e0; margin: 20px 0;">
-            <p style="color: #777; font-size: 14px;">If you didn't request this code, please ignore this email.</p>
-          </div>
+          <!DOCTYPE html>
+          <html lang="en">
+          <head>
+            <meta charset="UTF-8">
+            <meta name="viewport" content="width=device-width, initial-scale=1.0">
+            <title>Inspectify Verification</title>
+          </head>
+          <body style="margin: 0; padding: 0; font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; background-color: #f7f9fc; color: #333333;">
+            <table align="center" border="0" cellpadding="0" cellspacing="0" width="100%" style="max-width: 600px; margin: 0 auto; background-color: #ffffff; border-radius: 8px; overflow: hidden; box-shadow: 0 4px 10px rgba(0, 0, 0, 0.05);">
+              <!-- Header -->
+              <tr>
+                <td align="center" bgcolor="#4F46E5" style="padding: 30px 0;">
+                  <img src="https://i.ibb.co/Qj1bLqp/road-logo.png" alt="Inspectify Logo" width="60" style="display: block;">
+                  <h1 style="color: #ffffff; font-weight: 700; margin: 10px 0 0; font-size: 24px;">Inspectify</h1>
+                </td>
+              </tr>
+              
+              <!-- Content -->
+              <tr>
+                <td style="padding: 40px 30px;">
+                  <h2 style="margin: 0 0 20px; color: #333333; font-weight: 600;">Verify Your Email Address</h2>
+                  <p style="margin: 0 0 25px; color: #555555; line-height: 1.6; font-size: 16px;">Hello ${name || 'User'},</p>
+                  <p style="margin: 0 0 25px; color: #555555; line-height: 1.6; font-size: 16px;">Thank you for signing up with Inspectify. To complete your registration, please use the verification code below:</p>
+                  
+                  <!-- OTP Box -->
+                  <div style="background: linear-gradient(to right, #4F46E5, #6366F1); border-radius: 8px; padding: 5px; margin: 30px 0;">
+                    <div style="background-color: #ffffff; border-radius: 4px; padding: 20px; text-align: center;">
+                      <h2 style="margin: 0 0 10px; color: #4F46E5; font-size: 16px; font-weight: 600;">Your Verification Code</h2>
+                      <div style="font-size: 32px; letter-spacing: 8px; font-weight: 700; color: #333333; margin: 15px 0;">${otp}</div>
+                      <p style="margin: 10px 0 0; color: #888888; font-size: 14px;">This code will expire in 10 minutes</p>
+                    </div>
+                  </div>
+                  
+                  <p style="margin: 25px 0; color: #555555; line-height: 1.6; font-size: 16px;">If you didn't request this code, you can safely ignore this email. Someone might have entered your email address by mistake.</p>
+                </td>
+              </tr>
+              
+              <!-- Footer -->
+              <tr>
+                <td style="padding: 30px; background-color: #f8fafc; border-top: 1px solid #e5e7eb;">
+                  <p style="margin: 0 0 15px; color: #6b7280; font-size: 14px; text-align: center;">Inspectify - Road Damage Detection & Reporting</p>
+                  <p style="margin: 0; color: #6b7280; font-size: 14px; text-align: center;">© ${new Date().getFullYear()} Inspectify. All rights reserved.</p>
+                  
+                  <!-- Social Media Icons -->
+                  <div style="margin-top: 20px; text-align: center;">
+                    <a href="#" style="display: inline-block; margin: 0 8px;"><img src="https://i.ibb.co/vxbFJPt/facebook.png" alt="Facebook" width="24" height="24"></a>
+                    <a href="#" style="display: inline-block; margin: 0 8px;"><img src="https://i.ibb.co/JtmYVXZ/twitter.png" alt="Twitter" width="24" height="24"></a>
+                    <a href="#" style="display: inline-block; margin: 0 8px;"><img src="https://i.ibb.co/0qsXY0V/instagram.png" alt="Instagram" width="24" height="24"></a>
+                  </div>
+                </td>
+              </tr>
+            </table>
+            
+            <!-- Additional Information -->
+            <table align="center" border="0" cellpadding="0" cellspacing="0" width="100%" style="max-width: 600px; margin: 20px auto 0;">
+              <tr>
+                <td style="padding: 0 30px; text-align: center; color: #6b7280; font-size: 12px;">
+                  <p>This is an automated email. Please do not reply to this message.</p>
+                  <p>If you have any questions, please contact our <a href="#" style="color: #4F46E5; text-decoration: none;">support team</a>.</p>
+                </td>
+              </tr>
+            </table>
+          </body>
+          </html>
         `,
         // Add text alternative for email clients that don't support HTML
-        text: `Hello ${name || 'User'},\n\nThank you for signing up with SafeStreet App. Here's your verification code: ${otp}\n\nThis code will expire in 10 minutes.\n\nIf you didn't request this code, please ignore this email.`
+        text: `Hello ${name || 'User'},\n\nThank you for signing up with Inspectify. Here's your verification code: ${otp}\n\nThis code will expire in 10 minutes.\n\nIf you didn't request this code, please ignore this email.\n\nInspectify - Road Damage Detection & Reporting\n© ${new Date().getFullYear()} Inspectify. All rights reserved.`
       };
       
       // Send the email

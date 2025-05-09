@@ -112,7 +112,7 @@ const Features = () => {
             </div>
             <div className="flex space-x-4">
               <a href="/signup" className="px-6 py-3 bg-gradient-to-r from-green-600 to-teal-600 text-white font-medium rounded-xl shadow-md hover:shadow-lg transition-all hover:-translate-y-1">
-                Sign up for free
+                Sign up now !
               </a>
               <a href="/contact" className="px-6 py-3 bg-white text-green-600 font-medium rounded-xl shadow-md border border-green-200 hover:shadow-lg transition-all hover:-translate-y-1">
                 Contact us

@@ -1,0 +1,72 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <title>SVG to PNG Converter</title>
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      padding: 20px;
+      text-align: center;
+    }
+    canvas {
+      border: 1px solid #ccc;
+      margin: 20px 0;
+    }
+    button {
+      padding: 10px 20px;
+      background-color: #4CAF50;
+      color: white;
+      border: none;
+      border-radius: 4px;
+      cursor: pointer;
+    }
+    button:hover {
+      background-color: #45a049;
+    }
+    .instructions {
+      max-width: 600px;
+      margin: 0 auto;
+      text-align: left;
+      background-color: #f9f9f9;
+      padding: 15px;
+      border-radius: 5px;
+    }
+  </style>
+</head>
+<body>
+  <h1>SVG to PNG Converter</h1>
+  
+  <div class="instructions">
+    <h3>Instructions:</h3>
+    <ol>
+      <li>This tool will convert the inspectify-icon.svg to a PNG file</li>
+      <li>Click the "Convert SVG to PNG" button below</li>
+      <li>Right-click on the generated image and select "Save image as..."</li>
+      <li>Save the file as "logo.png" in the public folder</li>
+    </ol>
+  </div>
+  
+  <button id="convertBtn">Convert SVG to PNG</button>
+  <div>
+    <canvas id="canvas" width="100" height="100"></canvas>
+  </div>
+  
+  <script>
+    document.getElementById('convertBtn').addEventListener('click', function() {
+      const canvas = document.getElementById('canvas');
+      const ctx = canvas.getContext('2d');
+      
+      // Clear canvas
+      ctx.clearRect(0, 0, canvas.width, canvas.height);
+      
+      // Create image from SVG
+      const img = new Image();
+      img.onload = function() {
+        ctx.drawImage(img, 0, 0, 100, 100);
+        alert('Now right-click on the image and select "Save image as..." to save as logo.png');
+      };
+      img.src = '/inspectify-icon.svg';
+    });
+  </script>
+</body>
+</html>

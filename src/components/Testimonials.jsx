@@ -13,7 +13,7 @@ const testimonials = [
     id: 1,
     rating: 5,
     text: 'Inspectify has completely transformed how we manage road inspections. The detection accuracy saves us hours of manual work and has improved our maintenance planning by 40%.',
-    name: 'Navatha Singh',
+    name: 'Navatha  ',
     role: 'City Infrastructure Manager',
     image: 'https://randomuser.me/api/portraits/women/44.jpg',
     company: 'Metro City Department',
@@ -23,7 +23,7 @@ const testimonials = [
     id: 2,
     rating: 5,
     text: 'The severity classification and prioritization features are a game-changer. Inspectify helped us reduce downtime efficiently and allocate our resources to the most critical repairs first.',
-    name: 'Venkat Kumar',
+    name: 'Venkat Madhu Mohan',
     role: 'Highway Maintenance Director',
     image: 'https://randomuser.me/api/portraits/men/32.jpg',
     company: 'State Highway Authority',
@@ -33,7 +33,7 @@ const testimonials = [
     id: 3,
     rating: 5,
     text: 'From smart damage insights to clean summaries, everything is intuitive. Highly recommended for infrastructure planning. The AI detection is remarkably accurate even in challenging weather conditions.',
-    name: 'Rushika Patel',
+    name: 'Rushika Sharma',
     role: 'Urban Planning Specialist',
     image: "https://randomuser.me/api/portraits/women/68.jpg",
     company: 'Urban Development Corp',
@@ -43,7 +43,7 @@ const testimonials = [
     id: 4,
     rating: 5,
     text: 'The platform helped me manage field reports better. The clean UI and fast analysis are perfect for our operations. We can now inspect twice the road surface with the same team size.',
-    name: 'Shanti Reddy',
+    name: 'Shanti parimi',
     role: 'Operations Manager',
     image: "https://randomuser.me/api/portraits/women/79.jpg",
     company: 'Regional Transport Office',
@@ -53,9 +53,9 @@ const testimonials = [
     id: 5,
     rating: 5,
     text: 'It brought automation to our workflow. We now understand road safety trends better and faster. This tool has revolutionized how we approach preventative maintenance.',
-    name: 'Shiva Prasad',
+    name: 'Shivanandan',
     role: 'Chief Technology Officer',
-    image: "https://randomuser.me/api/portraits/men/54.jpg",
+    image: "https://randomuser.me/api/portraits/men/44.jpg",
     company: 'Smart City Solutions',
     highlight: 'Data-driven maintenance decisions'
   },
@@ -204,7 +204,7 @@ const Testimonials = () => {
             <div className="flex flex-col md:flex-row gap-8 items-center">
               <div className="md:w-1/3 flex-shrink-0">
                 <img 
-                  src="https://randomuser.me/api/portraits/men/42.jpg" 
+                  src="https://randomuser.me/api/portraits/men/86.jpg" 
                   alt="Featured testimonial" 
                   className="w-32 h-32 md:w-40 md:h-40 rounded-full object-cover border-4 border-white shadow-xl mx-auto"
                 />
@@ -219,7 +219,7 @@ const Testimonials = () => {
                   "The AI detection accuracy is remarkable. We've reduced our inspection costs by 60% while increasing the frequency of our road assessments. This technology is truly transformative for urban infrastructure management."
                 </p>
                 <div>
-                  <p className="font-bold text-gray-900 text-lg">Mr. Satvik Mehta</p>
+                  <p className="font-bold text-gray-900 text-lg">Mr. Sathvik Sagar</p>
                   <p className="text-green-700">Director of Infrastructure, National Highways Authority</p>
                 </div>
               </div>

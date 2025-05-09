@@ -9,9 +9,12 @@ const Footer = () => {
         <div className="grid grid-cols-1 md:grid-cols-4 gap-8">
           {/* Company Info */}
           <div className="md:col-span-1">
-            <div className="mb-4">
-              <h2 className="text-xl font-bold text-gray-900 mb-1">Inspectify</h2>
-              <p className="text-green-600 text-sm font-medium">AI Road Damage Detection</p>
+            <div className="mb-4 flex items-center">
+              <img src="/logo.png" alt="Inspectify Logo" className="w-8 h-8 mr-2" />
+              <div>
+                <h2 className="text-xl font-bold text-gray-900 mb-1">Inspectify</h2>
+                <p className="text-green-600 text-sm font-medium">AI Road Damage Detection</p>
+              </div>
             </div>
             <p className="text-gray-600 text-sm mb-4">
               Automated road inspection technology powered by artificial intelligence.
