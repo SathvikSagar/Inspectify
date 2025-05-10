@@ -98,7 +98,7 @@ const SignupPage = () => {
       console.log("Requesting OTP from server for:", { name, email });
       
       // Request OTP from the server
-      const BACKEND_URL = import.meta.env.VITE_BACKEND_URL || "http://localhost:5000";
+      const BACKEND_URL = import.meta.env.VITE_BACKEND_URL || "https://inspectify-backend.onrender.com";
       const response = await fetch(`${BACKEND_URL}/api/generate-otp`, {
         method: "POST",
         headers: { 

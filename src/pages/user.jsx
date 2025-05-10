@@ -38,7 +38,7 @@ const User = () => {
 
       // Verify with server
       try {
-        const response = await fetch('http://localhost:5000/api/verify-auth', {
+        const response = await fetch('https://inspectify-backend.onrender.com/api/verify-auth', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({ userId })

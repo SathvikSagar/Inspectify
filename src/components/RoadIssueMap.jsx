@@ -120,7 +120,7 @@ const RoadIssueMap = () => {
         setLoading(true);
         setError(null);
         
-        const response = await fetch("http://localhost:5000/api/road-entries");
+        const response = await fetch("https://inspectify-backend.onrender.com/api/road-entries");
         
         if (!response.ok) {
           throw new Error(`HTTP error! Status: ${response.status}`);
