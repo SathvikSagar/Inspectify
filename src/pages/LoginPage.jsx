@@ -2,6 +2,7 @@ import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import Footer from "../components/Footer";
 import { Eye, EyeOff, Mail, Lock, LogIn, AlertCircle } from "lucide-react";
+import { BACKEND_URL } from "../utils/apiConfig";
 
 const LoginPage = () => {
   const [email, setEmail] = useState("");
@@ -53,14 +54,17 @@ const LoginPage = () => {
 
     // TEMPORARY SOLUTION: Allow any login while backend is being fixed
     try {
-      console.log("Backend API is not available. Using temporary login solution.");
+      console.log("Using API configuration for login");
       
       // Create a user ID based on email for consistency
       const tempUserId = "user_" + email.replace(/[^a-zA-Z0-9]/g, "_");
       const userName = email.split('@')[0];
       
-      // Store user information in localStorage
-      localStorage.setItem("user", JSON.stringify({ email }));
+      // Store user information in localStorage with backend URL
+      localStorage.setItem("user", JSON.stringify({ 
+        email,
+        backendUrl: BACKEND_URL 
+      }));
       localStorage.setItem("roadVisionUserId", tempUserId);
       localStorage.setItem("roadVisionUserName", userName);
       localStorage.setItem("roadVisionUserType", "user");
