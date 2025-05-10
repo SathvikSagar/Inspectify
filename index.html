@@ -14,7 +14,7 @@
     <title>Inspectify - Streamline Road Inspection with AI</title>
     
     <style>
-      /* Dark mode variables */
+      /* Light mode variables */
       :root {
         --bg-primary: #ffffff;
         --bg-secondary: #f9fafb;
@@ -24,24 +24,27 @@
         --card-bg: #ffffff;
       }
       
-      .dark-mode {
-        --bg-primary: #111827;
-        --bg-secondary: #1f2937;
-        --text-primary: #f9fafb;
-        --text-secondary: #e5e7eb;
-        --border-color: #374151;
-        --card-bg: #1f2937;
-      }
-      
-      /* Apply dark mode styles */
-      .dark-mode body {
+      /* Force light mode for all elements */
+      html, body, #root, main, section, article, div, header, footer, aside, nav {
         background-color: var(--bg-primary);
         color: var(--text-primary);
       }
       
-      /* Ensure smooth transitions */
-      body, div, section, header, footer, main, aside, nav {
-        transition: background-color 0.3s ease, color 0.3s ease, border-color 0.3s ease;
+      /* Ensure inputs have correct colors */
+      input, select, textarea {
+        background-color: #ffffff !important;
+        color: #1f2937 !important;
+        border-color: #d1d5db !important;
+      }
+      
+      /* Override any dark mode styles */
+      .dark-mode {
+        --bg-primary: #ffffff !important;
+        --bg-secondary: #f9fafb !important;
+        --text-primary: #111827 !important;
+        --text-secondary: #4b5563 !important;
+        --border-color: #e5e7eb !important;
+        --card-bg: #ffffff !important;
       }
     </style>
   </head>
@@ -50,19 +53,31 @@
     <script type="module" src="/src/main.jsx"></script>
     
     <script>
-      // Check for dark mode preference
-      const savedDarkMode = localStorage.getItem('darkMode');
-      if (savedDarkMode === 'true') {
-        document.documentElement.classList.add('dark-mode');
-        document.body.classList.add('dark-mode');
-        document.body.style.backgroundColor = '#111827';
-        document.body.style.color = '#f9fafb';
-      } else if (savedDarkMode === null && window.matchMedia('(prefers-color-scheme: dark)').matches) {
-        document.documentElement.classList.add('dark-mode');
-        document.body.classList.add('dark-mode');
-        document.body.style.backgroundColor = '#111827';
-        document.body.style.color = '#f9fafb';
-      }
+      // Force light mode
+      localStorage.setItem('darkMode', 'false');
+      document.documentElement.classList.remove('dark-mode');
+      document.body.classList.remove('dark-mode');
+      document.documentElement.classList.add('light-mode');
+      document.body.classList.add('light-mode');
+      document.body.style.backgroundColor = '#ffffff';
+      document.body.style.color = '#111827';
+      
+      // Override any dark mode styles
+      const style = document.createElement('style');
+      style.textContent = `
+        html, body, #root, main, section, article, div, header, footer, aside, nav {
+          background-color: initial !important;
+          color: initial !important;
+        }
+        .bg-white {
+          background-color: #ffffff !important;
+        }
+        input, select, textarea {
+          background-color: #ffffff !important;
+          color: #1f2937 !important;
+        }
+      `;
+      document.head.appendChild(style);
     </script>
   </body>
 </html>
