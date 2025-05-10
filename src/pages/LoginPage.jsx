@@ -54,7 +54,8 @@ const LoginPage = () => {
     // For non-admin users, try server login
     try {
       console.log("Sending login request to server...");
-      const response = await fetch("http://localhost:5000/api/login", {
+      const BACKEND_URL = import.meta.env.VITE_BACKEND_URL || "http://localhost:5000";
+      const response = await fetch(`${BACKEND_URL}/api/login`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ email, password }),

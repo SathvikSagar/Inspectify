@@ -98,7 +98,8 @@ const SignupPage = () => {
       console.log("Requesting OTP from server for:", { name, email });
       
       // Request OTP from the server
-      const response = await fetch("http://localhost:5000/api/generate-otp", {
+      const BACKEND_URL = import.meta.env.VITE_BACKEND_URL || "http://localhost:5000";
+      const response = await fetch(`${BACKEND_URL}/api/generate-otp`, {
         method: "POST",
         headers: { 
           "Content-Type": "application/json",
@@ -163,7 +164,7 @@ const SignupPage = () => {
           const { name, email, password } = localResult.userData;
           
           // Create user in the backend
-          const response = await fetch("http://localhost:5000/api/signup", {
+          const response = await fetch(`${BACKEND_URL}/api/signup`, {
             method: "POST",
             headers: { 
               "Content-Type": "application/json",
@@ -200,7 +201,7 @@ const SignupPage = () => {
           console.log("Trying server OTP verification:", { email, otp });
           
           // Verify OTP with the server
-          const verifyResponse = await fetch("http://localhost:5000/api/verify-otp", {
+          const verifyResponse = await fetch(`${BACKEND_URL}/api/verify-otp`, {
             method: "POST",
             headers: { 
               "Content-Type": "application/json",

@@ -22,9 +22,11 @@ import Report from './pages/Report';
 import MapView from './pages/MapView';
 import 'leaflet/dist/leaflet.css';
 
+// Import API configuration
+import { BACKEND_URL, getSocketUrl } from './utils/apiConfig';
+
 // Setup the WebSocket connection
-const BACKEND_URL = import.meta.env.VITE_BACKEND_URL || "http://localhost:5000";
-const socket = io(BACKEND_URL);
+const socket = io(getSocketUrl());
 
 const HomePage = () => (
   <>
