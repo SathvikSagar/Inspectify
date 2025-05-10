@@ -11,11 +11,11 @@ const Hero = () => {
 
   return (
     <section
-      className="py-20 px-6 md:px-12 lg:px-24 flex flex-col md:flex-row items-center justify-between bg-white"
+      className="py-20 px-6 md:px-12 lg:px-24 flex flex-col md:flex-row items-center justify-between"
       style={{ fontFamily: "'Rethink Sans', sans-serif" }}
     >
       {/* Left Side - Text */}
-      <div className="w-full md:w-1/2 space-y-6">
+      <div className="md:w-1/2 space-y-6">
         <h1 className="text-4xl md:text-5xl font-bold text-green-900">
           <br />
         
@@ -30,8 +30,8 @@ const Hero = () => {
       </StyledButton>
       </div>
 
-      {/* Right Side - Video (hidden on mobile) */}
-      <div className="hidden md:flex pt-5 pl-45 md:w-1/2 mt-10 md:mt-0 justify-center">
+      {/* Right Side - Video */}
+      <div className="pt-5 pl-45 md:w-1/2 mt-10 md:mt-0 flex justify-center">
         <video
           autoPlay
           muted

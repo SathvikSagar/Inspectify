@@ -98,8 +98,7 @@ const SignupPage = () => {
       console.log("Requesting OTP from server for:", { name, email });
       
       // Request OTP from the server
-      const BACKEND_URL = import.meta.env.VITE_BACKEND_URL || "https://inspectify-backend.onrender.com";
-      const response = await fetch(`${BACKEND_URL}/api/generate-otp`, {
+      const response = await fetch("http://localhost:5000/api/generate-otp", {
         method: "POST",
         headers: { 
           "Content-Type": "application/json",
@@ -163,28 +162,70 @@ const SignupPage = () => {
         try {
           const { name, email, password } = localResult.userData;
           
-          // TEMPORARY SOLUTION: Skip backend API call while backend is being fixed
-          console.log("Backend API is not available. Using temporary signup solution.");
+          // Create user in the backend
+          const response = await fetch("http://localhost:5000/api/signup", {
+            method: "POST",
+            headers: { 
+              "Content-Type": "application/json",
+              "Accept": "application/json"
+            },
+            body: JSON.stringify({ name, email, password }),
+          });
           
-          // Simulate successful signup
-          console.log("Simulating successful signup for:", { name, email });
+          console.log("Signup response status:", response.status);
           
-          // Remove the OTP after successful verification
-          removeOTP(email);
+          const data = await response.json();
+          console.log("Signup response data:", data);
           
-          setSuccessMessage("Signup successful! Redirecting to login...");
-          
-          // Redirect to login page after successful verification
-          setTimeout(() => {
-            navigate("/login");
-          }, 2000);
+          if (response.ok) {
+            // Remove the OTP after successful verification
+            removeOTP(email);
+            
+            setSuccessMessage("Signup successful! Redirecting to login...");
+            
+            // Redirect to login page after successful verification
+            setTimeout(() => {
+              navigate("/login");
+            }, 2000);
+          } else {
+            setErrorMessage(data.error || "Signup failed. Please try again.");
+          }
         } catch (error) {
           console.error("Signup Error:", error);
           setErrorMessage("Error creating user. Please try again.");
         }
       } else {
-        // If the entered OTP doesn't match the stored OTP
-        setErrorMessage("Invalid verification code. Please try again.");
+        // If local verification fails, try server verification
+        try {
+          console.log("Trying server OTP verification:", { email, otp });
+          
+          // Verify OTP with the server
+          const verifyResponse = await fetch("http://localhost:5000/api/verify-otp", {
+            method: "POST",
+            headers: { 
+              "Content-Type": "application/json",
+              "Accept": "application/json"
+            },
+            body: JSON.stringify({ email, otp }),
+          });
+          
+          const verifyData = await verifyResponse.json();
+          console.log("Server OTP verification response:", verifyData);
+          
+          if (verifyResponse.ok) {
+            setSuccessMessage("Signup successful! Redirecting to login...");
+            
+            // Redirect to login page after successful verification
+            setTimeout(() => {
+              navigate("/login");
+            }, 2000);
+          } else {
+            setErrorMessage(verifyData.error || "OTP verification failed. Please try again.");
+          }
+        } catch (serverError) {
+          console.error("Server OTP Verification Error:", serverError);
+          setErrorMessage("Error connecting to server. Please try again.");
+        }
       }
       
       setLoading(false);
@@ -279,7 +320,7 @@ const SignupPage = () => {
                       type="text"
                       value={otp}
                       onChange={(e) => setOtp(e.target.value)}
-                      className="w-full pl-10 pr-4 py-3 border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all text-gray-800 bg-white"
+                      className="w-full pl-10 pr-4 py-3 border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all"
                       placeholder="Enter 6-digit code"
                       maxLength={6}
                       required
@@ -347,7 +388,7 @@ const SignupPage = () => {
                       type="text"
                       value={name}
                       onChange={(e) => setName(e.target.value)}
-                      className="w-full pl-10 pr-4 py-3 border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all text-gray-800 bg-white"
+                      className="w-full pl-10 pr-4 py-3 border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all"
                       placeholder="Your full name"
                       required
                     />
@@ -364,7 +405,7 @@ const SignupPage = () => {
                       type="email"
                       value={email}
                       onChange={(e) => setEmail(e.target.value)}
-                      className="w-full pl-10 pr-4 py-3 border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all text-gray-800 bg-white"
+                      className="w-full pl-10 pr-4 py-3 border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all"
                       placeholder="you@example.com"
                       required
                     />
@@ -381,7 +422,7 @@ const SignupPage = () => {
                       type={showPassword ? "text" : "password"}
                       value={password}
                       onChange={(e) => setPassword(e.target.value)}
-                      className="w-full pl-10 pr-10 py-3 border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all text-gray-800 bg-white"
+                      className="w-full pl-10 pr-10 py-3 border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all"
                       placeholder="Create a strong password"
                       required
                       minLength={8}

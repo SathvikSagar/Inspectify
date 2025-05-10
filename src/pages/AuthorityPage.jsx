@@ -1,5 +1,4 @@
 import React, { useState, useEffect } from "react";
-import { BACKEND_URL, getSocketUrl } from "../utils/apiConfig";
 import {
   FaEye,
   FaDownload,
@@ -90,13 +89,8 @@ const AuthorityPage = () => {
     
     // Import socket.io-client dynamically
     import('socket.io-client').then(({ io }) => {
-      const socketUrl = getSocketUrl();
-      console.log('Connecting to socket server at:', socketUrl);
-      const socket = io(socketUrl, {
-        transports: ['websocket', 'polling'],
-        reconnectionAttempts: 5,
-        reconnectionDelay: 1000,
-        timeout: 20000
+      const socket = io('http://localhost:5000', {
+        transports: ['websocket', 'polling']
       });
       
       socket.on('connect', () => {
@@ -125,7 +119,7 @@ const AuthorityPage = () => {
       try {
         // Only fetch data for the current user if not an admin
         const isAdmin = userId && userId.startsWith('admin_');
-        const baseUrl = "https://inspectify-backend.onrender.com";
+        const baseUrl = "http://localhost:5000";
         const roadDataUrl = isAdmin 
           ? `${baseUrl}/api/road-data` // Admin sees all data
           : `${baseUrl}/api/road-data?userId=${userId}`; // Regular users see only their data
@@ -204,7 +198,7 @@ const AuthorityPage = () => {
     // Open image in a modal
     setImageModal({
       open: true,
-      image: `https://inspectify-backend.onrender.com/${item.imagePath}`,
+      image: `http://localhost:5000/${item.imagePath}`,
       item: item
     });
   };
@@ -688,7 +682,7 @@ const AuthorityPage = () => {
                           </td>
                           <td className="px-6 py-4">
                             <img
-                              src={`https://inspectify-backend.onrender.com/${item.imagePath}`}
+                              src={`http://localhost:5000/${item.imagePath}`}
                               alt="Road"
                               className="w-24 h-16 object-cover rounded-md shadow border cursor-pointer hover:opacity-90 transition"
                               onClick={() => handleViewClick(item)}
@@ -748,7 +742,7 @@ const AuthorityPage = () => {
                   <div key={item._id} className="bg-white rounded-lg shadow-sm border border-gray-200 overflow-hidden hover:shadow-md transition">
                     <div className="relative">
                       <img
-                        src={`https://inspectify-backend.onrender.com/${item.imagePath}`}
+                        src={`http://localhost:5000/${item.imagePath}`}
                         alt="Road"
                         className="w-full h-40 object-cover"
                       />

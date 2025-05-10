@@ -1,6 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
-import { BACKEND_URL, getSocketUrl } from "../utils/apiConfig";
 import { MapContainer, TileLayer, Marker, Popup } from 'react-leaflet';
 import { BeatLoader } from 'react-spinners';
 import L from 'leaflet';
@@ -44,7 +43,7 @@ const Upload = () => {
 
   useEffect(() => {
     if (imagePath) {
-      setPreviewUrl(`https://inspectify-backend.onrender.com/${imagePath}`);
+      setPreviewUrl(`http://localhost:5000/${imagePath}`);
     }
   }, [imagePath]);
 
@@ -78,13 +77,8 @@ const Upload = () => {
     
     // Import socket.io-client dynamically to avoid issues
     import('socket.io-client').then(({ io }) => {
-      const socketUrl = getSocketUrl();
-      console.log('Connecting to socket server at:', socketUrl);
-      const socket = io(socketUrl, {
-        transports: ['websocket', 'polling'], // Try WebSocket first, then fall back to polling
-        reconnectionAttempts: 5,
-        reconnectionDelay: 1000,
-        timeout: 20000
+      const socket = io('http://localhost:5000', {
+        transports: ['websocket', 'polling'] // Try WebSocket first, then fall back to polling
       });
       
       socket.on('connect', () => {
@@ -150,7 +144,7 @@ const Upload = () => {
       const controller = new AbortController();
       const timeoutId = setTimeout(() => controller.abort(), 10000); // 10 second timeout
       
-      const response = await fetch(`https://inspectify-backend.onrender.com/${imagePath}`, {
+      const response = await fetch(`http://localhost:5000/${imagePath}`, {
         signal: controller.signal,
         cache: 'no-store', // Prevent caching
         priority: 'high'   // Set high priority
@@ -182,7 +176,7 @@ const Upload = () => {
       const analyzeController = new AbortController();
       const analyzeTimeoutId = setTimeout(() => analyzeController.abort(), 60000); // 60 second timeout
       
-      const analyzeResponse = await fetch('https://inspectify-backend.onrender.com/analyze-damage', {
+      const analyzeResponse = await fetch('http://localhost:5000/analyze-damage', {
         method: 'POST',
         body: formData,
         signal: analyzeController.signal,
@@ -326,7 +320,7 @@ const Upload = () => {
         setNotification("Warning: Image is very large. Processing may take longer.");
       }
       
-      const saveResponse = await fetch('https://inspectify-backend.onrender.com/save-canvas', {
+      const saveResponse = await fetch('http://localhost:5000/save-canvas', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(requestBody),

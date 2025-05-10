@@ -1,7 +1,6 @@
 import { useState, useEffect } from "react";
 import Footer from "../components/Footer";
 import { useNavigate } from "react-router-dom";
-import { BACKEND_URL, getSocketUrl } from "../utils/apiConfig";
 import UserLocationMap from "../components/UserLocationMap";
 import Sidebar from "../components/Sidebar";
 import {
@@ -99,7 +98,7 @@ const Admin = () => {
     
     // Verify with server if needed (for non-prefix admin users)
     if (!storedUserId.startsWith('admin_')) {
-      fetch('https://inspectify-backend.onrender.com/api/verify-auth', {
+      fetch('http://localhost:5000/api/verify-auth', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ userId: storedUserId })
@@ -131,13 +130,8 @@ const Admin = () => {
     
     // Import socket.io-client dynamically
     import('socket.io-client').then(({ io }) => {
-      const socketUrl = getSocketUrl();
-      console.log('Connecting to socket server at:', socketUrl);
-      const socket = io(socketUrl, {
-        transports: ['websocket', 'polling'],
-        reconnectionAttempts: 5,
-        reconnectionDelay: 1000,
-        timeout: 20000
+      const socket = io('http://localhost:5000', {
+        transports: ['websocket', 'polling']
       });
       
       socket.on('connect', () => {
@@ -196,8 +190,8 @@ const Admin = () => {
         // Only fetch stats for the current user if not an admin
         const isAdmin = userId.startsWith('admin_');
         const url = isAdmin 
-          ? "https://inspectify-backend.onrender.com/api/report-stats" // Admin sees all stats
-          : `https://inspectify-backend.onrender.com/api/report-stats?userId=${userId}`; // Regular users see only their stats
+          ? "http://localhost:5000/api/report-stats" // Admin sees all stats
+          : `http://localhost:5000/api/report-stats?userId=${userId}`; // Regular users see only their stats
         
         const response = await fetch(url);
         if (response.ok) {
@@ -227,8 +221,8 @@ const Admin = () => {
       try {
         const isAdmin = userId.startsWith('admin_');
         const url = isAdmin 
-          ? "https://inspectify-backend.onrender.com/api/weekly-reports" 
-          : `https://inspectify-backend.onrender.com/api/weekly-reports?userId=${userId}`;
+          ? "http://localhost:5000/api/weekly-reports" 
+          : `http://localhost:5000/api/weekly-reports?userId=${userId}`;
         
         const response = await fetch(url);
         if (response.ok) {
@@ -269,8 +263,8 @@ const Admin = () => {
       try {
         const isAdmin = userId.startsWith('admin_');
         const url = isAdmin 
-          ? "https://inspectify-backend.onrender.com/api/damage-distribution" 
-          : `https://inspectify-backend.onrender.com/api/damage-distribution?userId=${userId}`;
+          ? "http://localhost:5000/api/damage-distribution" 
+          : `http://localhost:5000/api/damage-distribution?userId=${userId}`;
         
         const response = await fetch(url);
         if (response.ok) {
@@ -307,8 +301,8 @@ const Admin = () => {
       try {
         const isAdmin = userId.startsWith('admin_');
         const url = isAdmin 
-          ? "https://inspectify-backend.onrender.com/api/severity-breakdown" 
-          : `https://inspectify-backend.onrender.com/api/severity-breakdown?userId=${userId}`;
+          ? "http://localhost:5000/api/severity-breakdown" 
+          : `http://localhost:5000/api/severity-breakdown?userId=${userId}`;
         
         const response = await fetch(url);
         if (response.ok) {
@@ -341,8 +335,8 @@ const Admin = () => {
       try {
         const isAdmin = userId.startsWith('admin_');
         const url = isAdmin 
-          ? "https://inspectify-backend.onrender.com/api/recent-reports?limit=4" 
-          : `https://inspectify-backend.onrender.com/api/recent-reports?userId=${userId}&limit=4`;
+          ? "http://localhost:5000/api/recent-reports?limit=4" 
+          : `http://localhost:5000/api/recent-reports?userId=${userId}&limit=4`;
         
         const response = await fetch(url);
         if (response.ok) {

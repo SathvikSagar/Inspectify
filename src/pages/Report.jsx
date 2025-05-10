@@ -268,7 +268,7 @@ const Report = () => {
         
         // Using fetch instead of axios for modern browsers
         console.log("Fetching road entries...");
-        const response = await fetch("https://inspectify-backend.onrender.com/api/road-entries");
+        const response = await fetch("http://localhost:5000/api/road-entries");
         
         if (!response.ok) {
           throw new Error(`HTTP error! Status: ${response.status} ${response.statusText}`);
@@ -344,8 +344,8 @@ const Report = () => {
       }
       
       // Fetch the road image
-      console.log("Fetching image from:", `https://inspectify-backend.onrender.com/${imagePath}`);
-      const response = await fetch(`https://inspectify-backend.onrender.com/${imagePath}`);
+      console.log("Fetching image from:", `http://localhost:5000/${imagePath}`);
+      const response = await fetch(`http://localhost:5000/${imagePath}`);
       
       if (!response.ok) {
         throw new Error(`Failed to fetch image: ${response.status} ${response.statusText}`);
@@ -936,7 +936,7 @@ const Report = () => {
       console.log("Submitting review:", requestBody);
       console.log("Review notes:", reviewForm.notes);
       
-      const response = await fetch('https://inspectify-backend.onrender.com/api/review-image-v2', {
+      const response = await fetch('http://localhost:5000/api/review-image-v2', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -1060,7 +1060,7 @@ const Report = () => {
                 <div className="relative overflow-hidden rounded-xl shadow-md group">
                   {entry.imagePath ? (
                     <img 
-                      src={`https://inspectify-backend.onrender.com/${entry.imagePath}`} 
+                      src={`http://localhost:5000/${entry.imagePath}`} 
                       alt="Road issue" 
                       className="w-full h-56 object-cover transition-transform duration-300 group-hover:scale-105"
                       onError={(e) => {
@@ -1545,7 +1545,7 @@ const Report = () => {
                   >
                     <div className="relative">
                       <img
-                        src={`https://inspectify-backend.onrender.com/${entry.imagePath}`}
+                        src={`http://localhost:5000/${entry.imagePath}`}
                         alt={`Detected road issue ${index + 1}`}
                         className="w-full h-56 object-cover"
                         loading="lazy"

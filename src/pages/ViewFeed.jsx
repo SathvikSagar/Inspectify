@@ -60,7 +60,7 @@ const ViewFeed = () => {
   const fetchFeedbacks = async () => {
     try {
       setLoading(true);
-      const response = await fetch('https://inspectify-backend.onrender.com/api/feedbacks');
+      const response = await fetch('http://localhost:5000/api/feedbacks');
       if (!response.ok) throw new Error('Failed to fetch feedbacks');
       const data = await response.json();
       
@@ -140,7 +140,7 @@ const ViewFeed = () => {
       }
       
       // API call to update feedback status
-      const response = await fetch(`https://inspectify-backend.onrender.com/api/feedbacks/${id}`, {
+      const response = await fetch(`http://localhost:5000/api/feedbacks/${id}`, {
         method: 'PATCH',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ 
@@ -165,7 +165,7 @@ const ViewFeed = () => {
       if (feedback.userId) {
         try {
           // Send notification to the user
-          await fetch('https://inspectify-backend.onrender.com/api/user-notification', {
+          await fetch('http://localhost:5000/api/user-notification', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({
@@ -210,7 +210,7 @@ const ViewFeed = () => {
     try {
       setSubmitting(true);
       // API call to send reply
-      const response = await fetch(`https://inspectify-backend.onrender.com/api/feedbacks/${replyModal.feedback._id}/reply`, {
+      const response = await fetch(`http://localhost:5000/api/feedbacks/${replyModal.feedback._id}/reply`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ 
@@ -231,7 +231,7 @@ const ViewFeed = () => {
       if (replyModal.feedback.userId) {
         try {
           // Send notification to the user
-          await fetch('https://inspectify-backend.onrender.com/api/user-notification', {
+          await fetch('http://localhost:5000/api/user-notification', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({

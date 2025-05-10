@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from "react";
+import React, { useEffect } from "react";
 import { BrowserRouter as Router, Routes, Route } from "react-router-dom";
 import { ToastContainer, toast } from "react-toastify";
 import "react-toastify/dist/ReactToastify.css";
@@ -22,34 +22,8 @@ import Report from './pages/Report';
 import MapView from './pages/MapView';
 import 'leaflet/dist/leaflet.css';
 
-// Import API configuration and helpers
-import { BACKEND_URL, getSocketUrl } from './utils/apiConfig';
-import { fixLocalStorageUrls } from './utils/apiHelper';
-
-// Initialize socket connection
-let socket;
-
-try {
-  // Try to connect to the real socket server
-  const socketUrl = getSocketUrl();
-  console.log("Connecting to socket.io server at:", socketUrl);
-  socket = io(socketUrl, {
-    transports: ['websocket', 'polling'],
-    reconnectionAttempts: 5,
-    reconnectionDelay: 1000,
-    timeout: 20000
-  });
-} catch (error) {
-  console.error("Error connecting to socket server:", error);
-  // Fallback to a mock socket
-  socket = {
-    on: () => {},
-    off: () => {},
-    emit: () => {},
-    connect: () => {},
-    disconnect: () => {}
-  };
-}
+// Setup the WebSocket connection
+const socket = io("http://localhost:5000");
 
 const HomePage = () => (
   <>
@@ -61,39 +35,7 @@ const HomePage = () => (
 );
 
 const App = () => {
-  const [socketConnected, setSocketConnected] = useState(false);
-  
   useEffect(() => {
-    // Fix any localStorage URLs that might be using localhost
-    try {
-      fixLocalStorageUrls();
-    } catch (error) {
-      console.error("Error fixing localStorage URLs:", error);
-    }
-    
-    // Set up socket connection events
-    socket.on("connect", () => {
-      console.log("Socket connected successfully");
-      setSocketConnected(true);
-      
-      // Get userId from localStorage if available
-      const userId = localStorage.getItem('userId');
-      if (userId) {
-        console.log("Authenticating socket with userId:", userId);
-        socket.emit("authenticate", userId);
-      }
-    });
-    
-    socket.on("connect_error", (error) => {
-      console.error("Socket connection error:", error);
-      setSocketConnected(false);
-    });
-    
-    socket.on("disconnect", (reason) => {
-      console.log("Socket disconnected:", reason);
-      setSocketConnected(false);
-    });
-    
     // WebSocket connection to listen for notifications
     socket.on("admin-notification", (data) => {
       toast.info(`New image uploaded: ${data.imagePath}`, {
@@ -102,9 +44,6 @@ const App = () => {
     });
 
     return () => {
-      socket.off("connect");
-      socket.off("connect_error");
-      socket.off("disconnect");
       socket.off("admin-notification");
     };
   }, []);

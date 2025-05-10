@@ -2,7 +2,6 @@ import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import Footer from "../components/Footer";
 import { Eye, EyeOff, Mail, Lock, LogIn, AlertCircle } from "lucide-react";
-import { BACKEND_URL } from "../utils/apiConfig";
 
 const LoginPage = () => {
   const [email, setEmail] = useState("");
@@ -52,30 +51,38 @@ const LoginPage = () => {
       return;
     }
 
-    // TEMPORARY SOLUTION: Allow any login while backend is being fixed
+    // For non-admin users, try server login
     try {
-      console.log("Using API configuration for login");
-      
-      // Create a user ID based on email for consistency
-      const tempUserId = "user_" + email.replace(/[^a-zA-Z0-9]/g, "_");
-      const userName = email.split('@')[0];
-      
-      // Store user information in localStorage with backend URL
-      localStorage.setItem("user", JSON.stringify({ 
-        email,
-        backendUrl: BACKEND_URL 
-      }));
-      localStorage.setItem("roadVisionUserId", tempUserId);
-      localStorage.setItem("roadVisionUserName", userName);
-      localStorage.setItem("roadVisionUserType", "user");
-      localStorage.setItem("roadVisionIsAdmin", "false");
-      
-      setLoading(false);
-      
-      // Redirect to user dashboard
-      console.log("Redirecting to user dashboard");
-      navigate("/user");
-      
+      console.log("Sending login request to server...");
+      const response = await fetch("http://localhost:5000/api/login", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ email, password }),
+      });
+
+      console.log("Server response status:", response.status);
+      const data = await response.json();
+      console.log("Server response data:", data);
+
+      if (response.ok) {
+        console.log("Login successful:", data);
+        // Store user information
+        localStorage.setItem("user", JSON.stringify({ email }));
+        localStorage.setItem("roadVisionUserId", data.userId || "user_" + Date.now());
+        localStorage.setItem("roadVisionUserName", data.name || email.split('@')[0]);
+        localStorage.setItem("roadVisionUserType", data.userType || "user");
+        localStorage.setItem("roadVisionIsAdmin", data.isAdmin ? "true" : "false");
+        
+        setLoading(false);
+        
+        // Redirect to user dashboard
+        console.log("Redirecting to user dashboard");
+        navigate("/user");
+      } else {
+        console.error("Login failed:", data.error);
+        setLoading(false);
+        setErrorMessage(data.error || "Invalid credentials. Please try again.");
+      }
     } catch (error) {
       console.error("Login Error:", error);
       setLoading(false);
@@ -107,7 +114,7 @@ const LoginPage = () => {
                     type="email"
                     value={email}
                     onChange={(e) => setEmail(e.target.value)}
-                    className="w-full pl-10 pr-4 py-3 border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all text-gray-800 bg-white"
+                    className="w-full pl-10 pr-4 py-3 border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all"
                     placeholder="you@example.com"
                     required
                   />
@@ -124,7 +131,7 @@ const LoginPage = () => {
                     type={showPassword ? "text" : "password"}
                     value={password}
                     onChange={(e) => setPassword(e.target.value)}
-                    className="w-full pl-10 pr-10 py-3 border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all text-gray-800 bg-white"
+                    className="w-full pl-10 pr-10 py-3 border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all"
                     placeholder="Enter your password"
                     required
                   />
