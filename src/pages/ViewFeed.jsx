@@ -362,11 +362,11 @@ const ViewFeed = () => {
         )}
 
         {/* Enhanced Header */}
-        <header className="bg-gradient-to-r from-blue-600 to-blue-800 shadow-md w-full">
+        <header className="bg-gradient-to-r from-green-600 to-blue-800 shadow-md w-full">
           <div className="w-full max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
             <div className="flex flex-col md:flex-row md:justify-between md:items-center space-y-4 md:space-y-0">
               <div>
-                <h1 className="text-2xl font-bold text-white flex items-center">
+                <h1 className="text-3xl font-bold text-white flex items-center">
                   <MessageSquare className="w-7 h-7 mr-2" />
                   Feedback Management
                 </h1>

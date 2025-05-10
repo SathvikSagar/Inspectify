@@ -8,6 +8,7 @@ import {
   FaChartArea,
   FaAddressCard,
   FaTable,
+  FaLeaf,
 } from "react-icons/fa";
 import { Camera } from "lucide-react";
 
@@ -19,19 +20,19 @@ const Sidebar = ({ activeTab, userName, userId }) => {
   
   // Define navigation items based on user role
   const adminNavItems = [
-    { name: "Dashboard", path: "/admin", icon: <FaHome /> },
-    { name: "Image Uploads", path: "/authority", icon: <FaImage /> },
-    { name: "Map", path: "/map", icon: <FaMap /> },
-    { name: "View Reports", path: "/report", icon: <FaChartArea /> },
-    { name: "View Feedbacks", path: "/view", icon: <FaAddressCard /> },
-    { name: "Logout", path: "/", icon: <FaSignOutAlt /> },
+    { name: "Dashboard", path: "/admin", icon: <FaHome className="text-lg" /> },
+    { name: "Image Uploads", path: "/authority", icon: <FaImage className="text-lg" /> },
+    { name: "Map", path: "/map", icon: <FaMap className="text-lg" /> },
+    { name: "View Reports", path: "/report", icon: <FaChartArea className="text-lg" /> },
+    { name: "View Feedbacks", path: "/view", icon: <FaAddressCard className="text-lg" /> },
+    { name: "Logout", path: "/", icon: <FaSignOutAlt className="text-lg" /> },
   ];
   
   const userNavItems = [
-    { name: "Dashboard", path: "/user", icon: <FaHome /> },
-    { name: "Camera", path: "/camera", icon: <Camera /> },
-    { name: "History", path: "/history", icon: <FaTable /> },
-    { name: "Logout", path: "/", icon: <FaSignOutAlt /> },
+    { name: "Dashboard", path: "/user", icon: <FaHome className="text-lg" /> },
+    { name: "Camera", path: "/camera", icon: <Camera className="text-lg" /> },
+    { name: "History", path: "/history", icon: <FaTable className="text-lg" /> },
+    { name: "Logout", path: "/", icon: <FaSignOutAlt className="text-lg" /> },
   ];
   
   // Use the appropriate navigation items based on user role
@@ -81,24 +82,26 @@ const Sidebar = ({ activeTab, userName, userId }) => {
   };
 
   return (
-    <div className="w-64 min-w-[16rem] bg-white shadow-lg h-screen fixed left-0 top-0 overflow-y-auto z-30">
+    <div className="w-64 min-w-[16rem] bg-white shadow-lg h-screen fixed left-0 top-0 overflow-y-auto z-30 border-r border-green-100">
       {/* Logo and Welcome */}
-      <div className="p-6">
-          <div className="flex items-center gap-2">
-            <img src="/logo.png" alt="Inspectify Logo" className="w-8 h-8" />
-            <h1 className="text-gray-800 font-bold text-xl">Inspectify</h1>
+      <div className="p-6 bg-gradient-to-b from-green-50 to-white">
+        <div className="flex items-center gap-2 mb-4">
+          <div className="w-10 h-10 rounded-full bg-green-600 flex items-center justify-center text-white">
+            <FaLeaf className="text-xl" />
           </div>
+          <h1 className="text-green-800 font-bold text-xl">Inspectify</h1>
+        </div>
         
         {userName && (
-          <div className="bg-gray-50 rounded-lg p-3 mb-6">
-            <p className="text-gray-500 text-xs font-medium mb-1">CURRENT USER</p>
+          <div className="bg-white rounded-lg p-4 mb-4 shadow-sm border border-green-100">
+            <p className="text-green-700 text-xs font-medium mb-2 uppercase tracking-wider">Current User</p>
             <div className="flex items-center gap-3">
-              <div className="w-10 h-10 rounded-full bg-green-100 flex items-center justify-center text-green-800">
+              <div className="w-12 h-12 rounded-full bg-green-100 flex items-center justify-center text-green-800 shadow-inner border-2 border-green-200">
                 <span className="text-lg font-semibold">{getInitial(userName)}</span>
               </div>
               <div>
                 <p className="text-gray-800 font-medium">{userName}</p>
-                <p className="text-gray-500 text-xs">{isAdmin ? "Administrator" : "Regular User"}</p>
+                <p className="text-green-600 text-xs font-medium">{isAdmin ? "Administrator" : "Regular User"}</p>
               </div>
             </div>
           </div>
@@ -106,31 +109,45 @@ const Sidebar = ({ activeTab, userName, userId }) => {
       </div>
       
       {/* Navigation Items */}
-      <div className="px-4">
-        <ul>
+      <div className="px-4 py-2">
+        <p className="text-xs font-medium text-green-700 uppercase tracking-wider mb-2 ml-2">Navigation</p>
+        <ul className="space-y-1">
           {navItems.map((item) => (
             <li
               key={item.name}
               onClick={() => handleTabChange(item.name)}
-              className={`p-3 cursor-pointer flex items-center gap-2 rounded-lg mb-2 transition-all ${
-                activeTab === item.name ? "bg-green-800 text-white" : "hover:bg-gray-100"
+              className={`p-3 cursor-pointer flex items-center gap-3 rounded-lg transition-all ${
+                activeTab === item.name 
+                  ? "bg-green-600 text-white shadow-md" 
+                  : "text-gray-700 hover:bg-green-50 hover:text-green-700"
               }`}
             >
-              {item.icon}
-              {item.name}
+              <div className={`${activeTab === item.name ? "text-white" : "text-green-600"}`}>
+                {item.icon}
+              </div>
+              <span className="font-medium">{item.name}</span>
+              {activeTab === item.name && (
+                <div className="w-1.5 h-1.5 rounded-full bg-white ml-auto"></div>
+              )}
             </li>
           ))}
         </ul>
       </div>
       
       {/* Footer */}
-      <div className="px-6 mt-8 mb-6">
-        <div className="border-t border-gray-200 pt-4">
-          <p className="text-xs text-gray-500">
-            &copy; {new Date().getFullYear()} Inspectify
-            <br />
-            Version 1.0.0
-          </p>
+      <div className="px-6 mt-auto mb-6 absolute bottom-0 left-0 right-0">
+        <div className="border-t border-green-100 pt-4">
+          <div className="flex items-center justify-between">
+            <div>
+              <p className="text-xs text-green-700 font-medium">
+                &copy; {new Date().getFullYear()} Inspectify
+              </p>
+              <p className="text-xs text-gray-500">Version 1.0.0</p>
+            </div>
+            <div className="w-8 h-8 rounded-full bg-green-50 flex items-center justify-center">
+              <FaLeaf className="text-green-600 text-xs" />
+            </div>
+          </div>
         </div>
       </div>
     </div>

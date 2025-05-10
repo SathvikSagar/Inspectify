@@ -12,9 +12,57 @@
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
     
     <title>Inspectify - Streamline Road Inspection with AI</title>
+    
+    <style>
+      /* Dark mode variables */
+      :root {
+        --bg-primary: #ffffff;
+        --bg-secondary: #f9fafb;
+        --text-primary: #111827;
+        --text-secondary: #4b5563;
+        --border-color: #e5e7eb;
+        --card-bg: #ffffff;
+      }
+      
+      .dark-mode {
+        --bg-primary: #111827;
+        --bg-secondary: #1f2937;
+        --text-primary: #f9fafb;
+        --text-secondary: #e5e7eb;
+        --border-color: #374151;
+        --card-bg: #1f2937;
+      }
+      
+      /* Apply dark mode styles */
+      .dark-mode body {
+        background-color: var(--bg-primary);
+        color: var(--text-primary);
+      }
+      
+      /* Ensure smooth transitions */
+      body, div, section, header, footer, main, aside, nav {
+        transition: background-color 0.3s ease, color 0.3s ease, border-color 0.3s ease;
+      }
+    </style>
   </head>
   <body>
     <div id="root"></div>
     <script type="module" src="/src/main.jsx"></script>
+    
+    <script>
+      // Check for dark mode preference
+      const savedDarkMode = localStorage.getItem('darkMode');
+      if (savedDarkMode === 'true') {
+        document.documentElement.classList.add('dark-mode');
+        document.body.classList.add('dark-mode');
+        document.body.style.backgroundColor = '#111827';
+        document.body.style.color = '#f9fafb';
+      } else if (savedDarkMode === null && window.matchMedia('(prefers-color-scheme: dark)').matches) {
+        document.documentElement.classList.add('dark-mode');
+        document.body.classList.add('dark-mode');
+        document.body.style.backgroundColor = '#111827';
+        document.body.style.color = '#f9fafb';
+      }
+    </script>
   </body>
 </html>

@@ -24,6 +24,10 @@ const Dashboard = () => {
   // Location
   const [location, setLocation] = useState(null);
   const [hasFetchedLocation, setHasFetchedLocation] = useState(false);
+  const [useManualAddress, setUseManualAddress] = useState(false);
+  const [manualAddress, setManualAddress] = useState("");
+  const [manualAddressCoords, setManualAddressCoords] = useState(null);
+  const [isGeocodingLoading, setIsGeocodingLoading] = useState(false);
 
   // Image & Prediction
   const [selectedFile, setSelectedFile] = useState(null);
@@ -222,6 +226,45 @@ const Dashboard = () => {
       { enableHighAccuracy: true }
     );
   };
+  
+  // 🌎 Geocode manual address to coordinates
+  const geocodeAddress = async (address) => {
+    if (!address.trim()) {
+      setError("Please enter an address");
+      return;
+    }
+    
+    setIsGeocodingLoading(true);
+    setError("");
+    
+    try {
+      // Use Nominatim for geocoding (same service as reverse geocoding)
+      const encodedAddress = encodeURIComponent(address);
+      const response = await fetch(
+        `https://nominatim.openstreetmap.org/search?format=json&q=${encodedAddress}&limit=1`
+      );
+      
+      const data = await response.json();
+      
+      if (data && data.length > 0) {
+        const result = data[0];
+        setManualAddressCoords({
+          lat: parseFloat(result.lat),
+          lon: parseFloat(result.lon),
+          address: address
+        });
+      } else {
+        setError("Could not find coordinates for this address. Please try a different address.");
+        setManualAddressCoords(null);
+      }
+    } catch (err) {
+      console.error("Geocoding error:", err);
+      setError("Failed to convert address to coordinates. Please try again.");
+      setManualAddressCoords(null);
+    } finally {
+      setIsGeocodingLoading(false);
+    }
+  };
 
   // 🎥 Camera Stream
   useEffect(() => {
@@ -285,8 +328,14 @@ const Dashboard = () => {
       return;
     }
 
-    if (!location) {
-      setError("Location not available. Please allow location access.");
+    // Check location based on whether we're using manual address or current location
+    if (useManualAddress) {
+      if (!manualAddressCoords) {
+        setError("Please enter and verify a valid address first by clicking the search button.");
+        return;
+      }
+    } else if (!location) {
+      setError("Current location not available. Please allow location access or toggle to 'Manual' to enter the address manually.");
       return;
     }
     
@@ -295,11 +344,14 @@ const Dashboard = () => {
       return;
     }
 
+    // Use the appropriate location data based on user selection
+    const locationData = useManualAddress ? manualAddressCoords : location;
+
     const formData = new FormData();
     formData.append("image", selectedFile);
-    formData.append("latitude", location.lat);
-    formData.append("longitude", location.lon);
-    formData.append("address", location.address);
+    formData.append("latitude", locationData.lat);
+    formData.append("longitude", locationData.lon);
+    formData.append("address", locationData.address);
     formData.append("userId", userId); // Always include userId
 
     setLoading(true);
@@ -991,7 +1043,7 @@ const Dashboard = () => {
         <div className={`px-4 py-3 text-white ${
           latestNotification.details?.status === 'approved' ? 'bg-gradient-to-r from-green-600 to-green-500' :
           latestNotification.details?.status === 'rejected' ? 'bg-gradient-to-r from-red-600 to-red-500' :
-          latestNotification.details?.status === 'in-progress' ? 'bg-gradient-to-r from-blue-600 to-blue-500' :
+          latestNotification.details?.status === 'in-progress' ? 'bg-gradient-to-r from-green-600 to-green-500' :
           'bg-gradient-to-r from-gray-700 to-gray-600'
         }`}>
           <div className="flex justify-between items-center">
@@ -1025,7 +1077,7 @@ const Dashboard = () => {
                 <p className={`font-medium ${
                   latestNotification.details?.status === 'approved' ? 'text-green-600' :
                   latestNotification.details?.status === 'rejected' ? 'text-red-600' :
-                  latestNotification.details?.status === 'in-progress' ? 'text-blue-600' :
+                  latestNotification.details?.status === 'in-progress' ? 'text-green-600' :
                   'text-gray-700'
                 }`}>
                   {latestNotification.details?.status ? 
@@ -1090,7 +1142,7 @@ const Dashboard = () => {
                 setShowNotificationHistory(true);
                 setShowNotification(false);
               }}
-              className="px-3 py-1.5 text-blue-600 hover:text-blue-800 text-sm font-medium"
+              className="px-3 py-1.5 text-green-600 hover:text-green-800 text-sm font-medium"
             >
               View All Notifications
             </button>
@@ -1149,14 +1201,14 @@ const Dashboard = () => {
                 {notifications.map(notification => (
                   <div 
                     key={notification.id} 
-                    className={`p-4 rounded-lg border ${notification.read ? 'bg-white border-gray-200' : 'bg-blue-50 border-blue-200'}`}
+                    className={`p-4 rounded-lg border ${notification.read ? 'bg-white border-gray-200' : 'bg-green-50 border-green-200'}`}
                   >
                     <div className="flex justify-between items-start">
                       <div className="flex items-start gap-3">
                         <div className={`p-2 rounded-full ${
                           notification.details?.status === 'approved' ? 'bg-green-100 text-green-600' :
                           notification.details?.status === 'rejected' ? 'bg-red-100 text-red-600' :
-                          notification.details?.status === 'in-progress' ? 'bg-blue-100 text-blue-600' :
+                          notification.details?.status === 'in-progress' ? 'bg-green-100 text-green-600' :
                           'bg-gray-100 text-gray-600'
                         }`}>
                           {notification.details?.status === 'approved' ? 
@@ -1175,7 +1227,7 @@ const Dashboard = () => {
                         </div>
                       </div>
                       {!notification.read && (
-                        <div className="bg-blue-500 w-2 h-2 rounded-full"></div>
+                        <div className="bg-green-500 w-2 h-2 rounded-full"></div>
                       )}
                     </div>
                     
@@ -1196,7 +1248,7 @@ const Dashboard = () => {
                             setShowNotification(true);
                           }, 100);
                         }}
-                        className="text-sm text-blue-600 hover:text-blue-800"
+                        className="text-sm text-green-600 hover:text-green-800"
                       >
                         View Details
                       </button>
@@ -1221,7 +1273,7 @@ const Dashboard = () => {
       {notifications.filter(n => !n.read).length > 0 && !showNotification && !showNotificationHistory && (
         <button
           onClick={() => setShowNotificationHistory(true)}
-          className="fixed top-4 right-4 z-40 bg-blue-600 text-white p-2 rounded-full shadow-lg hover:bg-blue-700 transition-all duration-200 flex items-center justify-center"
+          className="fixed top-4 right-4 z-40 bg-green-600 text-white p-2 rounded-full shadow-lg hover:bg-green-700 transition-all duration-200 flex items-center justify-center"
         >
           <Bell className="h-5 w-5" />
           <span className="absolute -top-1 -right-1 bg-red-500 text-white text-xs w-5 h-5 flex items-center justify-center rounded-full">
@@ -1245,8 +1297,8 @@ const Dashboard = () => {
         
         <ul className="space-y-2">
           {[
-            { name: "Dashboard", icon: <FaHome className="text-blue-600" /> },
-            { name: "Camera", icon: <FaCamera className="text-green-600" /> },
+            { name: "Dashboard", icon: <FaHome className="text-green-600" /> },
+            { name: "Camera", icon: <FaCamera className="text-green-500" /> },
             { name: "History", icon: <FaClock className="text-orange-500" /> },
             { name: "Notifications", icon: <Bell className="text-red-500" /> },
             { name: "Logout", icon: <FaSignOutAlt className="text-gray-600" /> }
@@ -1272,7 +1324,7 @@ const Dashboard = () => {
               }}
               className={`p-3 cursor-pointer flex items-center gap-3 rounded-lg transition-all ${
                 activeTab === item.name 
-                  ? "bg-gradient-to-r from-blue-600 to-blue-500 text-white shadow-md" 
+                  ? "bg-gradient-to-r from-green-600 to-green-500 text-white shadow-md" 
                   : "hover:bg-gray-100"
               }`}
             >
@@ -1292,24 +1344,24 @@ const Dashboard = () => {
         </ul>
         
         <div className="mt-auto pt-6 border-t border-gray-200 mt-8">
-          <div className="bg-blue-50 rounded-lg p-4">
-            <p className="text-sm text-blue-800 font-medium">Help improve road safety by reporting issues in your area.</p>
+          <div className="bg-green-50 rounded-lg p-4">
+            <p className="text-sm text-green-800 font-medium">Help improve road safety by reporting issues in your area.</p>
           </div>
         </div>
       </div>
 
       {activeTab === "Camera" && (
-  <div className="flex-1 bg-gradient-to-br from-gray-50 to-blue-50 p-8 overflow-y-auto text-gray-800 transition-all duration-300">
+  <div className="flex-1 bg-gradient-to-br from-gray-50 to-green-50 p-8 overflow-y-auto text-gray-800 transition-all duration-300">
     <div className="max-w-6xl mx-auto">
       <div className="flex justify-between items-center mb-8">
         <h2 className="text-3xl font-bold flex items-center gap-3 text-gray-800">
-          <div className="bg-blue-600 text-white p-2 rounded-lg">
+          <div className="bg-green-600 text-white p-2 rounded-lg">
             <Camera className="h-6 w-6" />
           </div>
           Road Issue Detection
         </h2>
         
-        <div className="flex items-center gap-2 bg-blue-100 px-4 py-2 rounded-lg text-blue-800">
+        <div className="flex items-center gap-2 bg-green-100 px-4 py-2 rounded-lg text-green-800">
           <Clock className="h-4 w-4" />
           <span className="text-sm font-medium">Last updated: {new Date().toLocaleTimeString()}</span>
         </div>
@@ -1318,7 +1370,7 @@ const Dashboard = () => {
     <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
         {/* Camera Section */}
         <div className="bg-white rounded-xl shadow-lg overflow-hidden border border-gray-200">
-          <div className="p-4 bg-gradient-to-r from-blue-600 to-blue-500 text-white">
+          <div className="p-4 bg-gradient-to-r from-green-600 to-green-500 text-white">
             <h3 className="font-semibold flex items-center gap-2">
               <Camera className="h-4 w-4" />
               Live Camera Feed
@@ -1358,7 +1410,7 @@ const Dashboard = () => {
                 className={`flex-1 py-3 px-4 font-semibold rounded-lg flex items-center justify-center gap-2 transition-all ${
                   streamActive 
                     ? "bg-red-600 hover:bg-red-700 text-white" 
-                    : "bg-blue-600 hover:bg-blue-700 text-white"
+                    : "bg-green-600 hover:bg-green-700 text-white"
                 }`}
               >
                 {streamActive ? (
@@ -1392,41 +1444,131 @@ const Dashboard = () => {
       <div className="space-y-6">
         {/* Location Info */}
         <div className="bg-white p-6 rounded-xl shadow-lg border border-gray-200">
-          <h4 className="text-lg font-semibold mb-4 flex items-center gap-2 text-gray-800">
-            <MapPin className="h-5 w-5 text-red-500" />
-            Location Information
-          </h4>
-          
-          {loading ? (
-            <div className="flex items-center gap-3 text-gray-500">
-              <div className="animate-spin h-4 w-4 border-2 border-blue-600 border-t-transparent rounded-full"></div>
-              <p>Fetching your location...</p>
+          <div className="flex justify-between items-center mb-4">
+            <h4 className="text-lg font-semibold flex items-center gap-2 text-gray-800">
+              <MapPin className="h-5 w-5 text-red-500" />
+              Location Information
+            </h4>
+            
+            {/* Toggle between current location and manual address */}
+            <div className="flex items-center gap-2">
+              <span className={`text-sm ${!useManualAddress ? 'font-semibold text-green-600' : 'text-gray-500'}`}>
+                Current
+              </span>
+              <button 
+                onClick={() => {
+                  setUseManualAddress(!useManualAddress);
+                  // Reset error when toggling
+                  setError("");
+                  // Reset manual address fields when switching back to current location
+                  if (useManualAddress) {
+                    setManualAddress("");
+                    setManualAddressCoords(null);
+                  }
+                }}
+                className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors focus:outline-none ${useManualAddress ? 'bg-green-600' : 'bg-gray-300'}`}
+              >
+                <span 
+                  className={`inline-block h-4 w-4 transform rounded-full bg-white transition-transform ${useManualAddress ? 'translate-x-6' : 'translate-x-1'}`} 
+                />
+              </button>
+              <span className={`text-sm ${useManualAddress ? 'font-semibold text-green-600' : 'text-gray-500'}`}>
+                Manual
+              </span>
             </div>
-          ) : location ? (
-            <div className="space-y-3">
-              <div className="bg-gray-50 p-3 rounded-lg border border-gray-100">
-                <p className="text-xs text-gray-500 mb-1">Address</p>
-                <p className="text-gray-800">{location.address}</p>
+          </div>
+          
+          {!useManualAddress ? (
+            // Current location section
+            loading ? (
+              <div className="flex items-center gap-3 text-gray-500">
+                <div className="animate-spin h-4 w-4 border-2 border-green-600 border-t-transparent rounded-full"></div>
+                <p>Fetching your location...</p>
+              </div>
+            ) : location ? (
+              <div className="space-y-3">
+                <div className="bg-gray-50 p-3 rounded-lg border border-gray-100">
+                  <p className="text-xs text-gray-500 mb-1">Address</p>
+                  <p className="text-gray-800">{location.address}</p>
+                </div>
+                
+                <div className="grid grid-cols-2 gap-3">
+                  <div className="bg-gray-50 p-3 rounded-lg border border-gray-100">
+                    <p className="text-xs text-gray-500 mb-1">Latitude</p>
+                    <p className="text-gray-800 font-medium">{location.lat}</p>
+                  </div>
+                  <div className="bg-gray-50 p-3 rounded-lg border border-gray-100">
+                    <p className="text-xs text-gray-500 mb-1">Longitude</p>
+                    <p className="text-gray-800 font-medium">{location.lon}</p>
+                  </div>
+                </div>
+              </div>
+            ) : (
+              <div className="bg-red-50 p-4 rounded-lg border border-red-100 flex items-start gap-3">
+                <AlertTriangle className="h-5 w-5 text-red-500 flex-shrink-0 mt-0.5" />
+                <div>
+                  <p className="text-red-800 font-medium">Location Error</p>
+                  <p className="text-red-600 text-sm mt-1">{error || "Unable to access your location. Please enable location services."}</p>
+                </div>
+              </div>
+            )
+          ) : (
+            // Manual address section
+            <div className="space-y-4">
+              <div className="flex flex-col">
+                <label htmlFor="manual-address" className="text-sm text-gray-600 mb-1">Enter Address</label>
+                <div className="flex gap-2">
+                  <input
+                    id="manual-address"
+                    type="text"
+                    value={manualAddress}
+                    onChange={(e) => {
+                      setManualAddress(e.target.value);
+                      // Clear error when user starts typing a new address
+                      if (error) setError("");
+                    }}
+                    placeholder="Enter the location where the image was taken"
+                    className="flex-1 border border-gray-300 rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-transparent"
+                  />
+                  <button
+                    onClick={() => geocodeAddress(manualAddress)}
+                    disabled={isGeocodingLoading || !manualAddress.trim()}
+                    className="bg-green-600 hover:bg-green-700 text-white px-4 py-2 rounded-lg disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center"
+                  >
+                    {isGeocodingLoading ? (
+                      <div className="animate-spin h-4 w-4 border-2 border-white border-t-transparent rounded-full"></div>
+                    ) : (
+                      <Search className="h-4 w-4" />
+                    )}
+                  </button>
+                </div>
               </div>
               
-              <div className="grid grid-cols-2 gap-3">
-                <div className="bg-gray-50 p-3 rounded-lg border border-gray-100">
-                  <p className="text-xs text-gray-500 mb-1">Latitude</p>
-                  <p className="text-gray-800 font-medium">{location.lat}</p>
+              {error && (
+                <div className="bg-red-50 p-3 rounded-lg border border-red-100">
+                  <p className="text-red-600 text-sm">{error}</p>
                 </div>
-                <div className="bg-gray-50 p-3 rounded-lg border border-gray-100">
-                  <p className="text-xs text-gray-500 mb-1">Longitude</p>
-                  <p className="text-gray-800 font-medium">{location.lon}</p>
+              )}
+              
+              {manualAddressCoords && (
+                <div className="space-y-3">
+                  <div className="bg-gray-50 p-3 rounded-lg border border-gray-100">
+                    <p className="text-xs text-gray-500 mb-1">Verified Address</p>
+                    <p className="text-gray-800">{manualAddressCoords.address}</p>
+                  </div>
+                  
+                  <div className="grid grid-cols-2 gap-3">
+                    <div className="bg-gray-50 p-3 rounded-lg border border-gray-100">
+                      <p className="text-xs text-gray-500 mb-1">Latitude</p>
+                      <p className="text-gray-800 font-medium">{manualAddressCoords.lat}</p>
+                    </div>
+                    <div className="bg-gray-50 p-3 rounded-lg border border-gray-100">
+                      <p className="text-xs text-gray-500 mb-1">Longitude</p>
+                      <p className="text-gray-800 font-medium">{manualAddressCoords.lon}</p>
+                    </div>
+                  </div>
                 </div>
-              </div>
-            </div>
-          ) : (
-            <div className="bg-red-50 p-4 rounded-lg border border-red-100 flex items-start gap-3">
-              <AlertTriangle className="h-5 w-5 text-red-500 flex-shrink-0 mt-0.5" />
-              <div>
-                <p className="text-red-800 font-medium">Location Error</p>
-                <p className="text-red-600 text-sm mt-1">{error || "Unable to access your location. Please enable location services."}</p>
-              </div>
+              )}
             </div>
           )}
         </div>
@@ -1434,12 +1576,12 @@ const Dashboard = () => {
         {/* Image Upload */}
         <div className="bg-white p-6 rounded-xl shadow-lg border border-gray-200">
           <h4 className="text-lg font-semibold mb-4 flex items-center gap-2 text-gray-800">
-            <FileText className="h-5 w-5 text-blue-500" />
+            <FileText className="h-5 w-5 text-green-500" />
             Upload Road Image
           </h4>
           
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            <div className="border-2 border-dashed border-gray-300 rounded-lg p-6 text-center hover:border-blue-500 transition-colors flex flex-col justify-center items-center h-64">
+            <div className="border-2 border-dashed border-gray-300 rounded-lg p-6 text-center hover:border-green-500 transition-colors flex flex-col justify-center items-center h-64">
               <input
                 type="file"
                 id="file-upload"
@@ -1448,8 +1590,8 @@ const Dashboard = () => {
                 className="hidden"
               />
               <label htmlFor="file-upload" className="cursor-pointer w-full h-full flex flex-col justify-center items-center">
-                <div className="w-16 h-16 bg-blue-100 rounded-full flex items-center justify-center mb-4">
-                  <FileText className="h-8 w-8 text-blue-600" />
+                <div className="w-16 h-16 bg-green-100 rounded-full flex items-center justify-center mb-4">
+                  <FileText className="h-8 w-8 text-green-600" />
                 </div>
                 <p className="text-gray-800 font-medium text-lg">Click to upload a road image</p>
                 <p className="text-gray-500 text-sm mt-2">or drag and drop</p>
@@ -1564,7 +1706,7 @@ const Dashboard = () => {
                   </div>
                   
                   {prediction.label.toLowerCase() === "road" && (
-                    <div className="mt-4 bg-blue-50 p-3 rounded-lg border border-green-100">
+                    <div className="mt-4 bg-green-50 p-3 rounded-lg border border-green-100">
                       <p className="text-green-800 text-sm">
                        </p>
                     </div>
@@ -1935,7 +2077,7 @@ const Dashboard = () => {
                       <div className={`mt-2 px-2 py-1 rounded text-xs font-medium inline-block
                         ${item.reviewStatus === 'approved' ? 'bg-green-100 text-green-800' : 
                           item.reviewStatus === 'rejected' ? 'bg-red-100 text-red-800' : 
-                          item.reviewStatus === 'in-progress' ? 'bg-blue-100 text-blue-800' : 
+                          item.reviewStatus === 'in-progress' ? 'bg-green-100 text-green-800' : 
                           'bg-gray-100 text-gray-800'}`}>
                         {item.reviewStatus.charAt(0).toUpperCase() + item.reviewStatus.slice(1)}
                       </div>

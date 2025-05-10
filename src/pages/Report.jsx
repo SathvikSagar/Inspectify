@@ -575,54 +575,32 @@ const Report = () => {
           doc.text("Severity Level:", 15, 135);
           doc.text(severity?.charAt(0).toUpperCase() + severity?.slice(1) || 'Unknown', 40, 135);
           
-          // Analysis section - removed background fill to show watermark
+          // Image section - removed background fill to show watermark
           // Add subtle divider line instead of box
           doc.setDrawColor(200, 200, 200);
           doc.setLineWidth(0.2);
           doc.line(10, 150, 200, 150);
           
           // Enhanced section header with gradient-like effect
-          doc.setFillColor(...gradientColors[0]); // Back to blue for this section
+          doc.setFillColor(...gradientColors[1]); // Green for this section
           doc.rect(10, 157, 3, 8, 'F');
           
           doc.setTextColor(44, 62, 80);
           doc.setFontSize(14);
           doc.setFont(undefined, 'bold');
-          doc.text("Analysis Summary", 18, 160);
-          doc.setFont(undefined, 'normal');
-          doc.setFontSize(10);
-          
-          const summary = "This road condition has been automatically classified using our AI detection system. Based on the assessment, this issue requires attention from road maintenance authorities. The severity and type of damage have been identified to help prioritize repairs.";
-          const wrappedSummary = doc.splitTextToSize(summary, 180);
-          doc.setTextColor(52, 73, 94);
-          doc.text(wrappedSummary, 15, 170);
-          
-          // Image section - removed background fill to show watermark
-          // Add subtle divider line instead of box
-          doc.setDrawColor(200, 200, 200);
-          doc.setLineWidth(0.2);
-          doc.line(10, 190, 200, 190);
-          
-          // Enhanced section header with gradient-like effect
-          doc.setFillColor(...gradientColors[1]); // Green for this section
-          doc.rect(10, 197, 3, 8, 'F');
-          
-          doc.setTextColor(44, 62, 80);
-          doc.setFontSize(14);
-          doc.setFont(undefined, 'bold');
-          doc.text("Visual Evidence", 18, 200);
+          doc.text("Visual Evidence", 18, 160);
           
           console.log("Adding image to PDF with enhanced styling...");
           try {
             // Create a clipping mask for rounded corners
             doc.saveGraphicsState();
             
-            // Define the rounded rectangle for clipping
+            // Define the rounded rectangle for clipping - adjusted position and size
             const x = 20;
-            const y = 205;
+            const y = 165; // Adjusted y position
             const w = 170;
-            const h = 70;
-            const r = 10; // increased corner radius for more rounded look
+            const h = 100; // Increased height for better aspect ratio
+            const r = 10; // corner radius for rounded look
             
             // Add a shadow effect (simulate by drawing multiple rectangles with decreasing opacity)
             for (let i = 3; i > 0; i--) {
@@ -636,8 +614,35 @@ const Report = () => {
             doc.roundedRect(x, y, w, h, r, r, 'S');
             doc.clip();
             
-            // Add the image within the clipping path
-            doc.addImage(base64Image, "JPEG", x, y, w, h);
+            // Add the image within the clipping path with proper aspect ratio
+            // Create a temporary image to get dimensions
+            const tempImg = new Image();
+            tempImg.src = base64Image;
+            
+            // Calculate dimensions that maintain aspect ratio
+            let imgWidth = w;
+            let imgHeight = h;
+            let imgX = x;
+            let imgY = y;
+            
+            // If we have access to the image dimensions, calculate proper sizing
+            if (tempImg.width && tempImg.height) {
+              const imgRatio = tempImg.width / tempImg.height;
+              const boxRatio = w / h;
+              
+              if (imgRatio > boxRatio) {
+                // Image is wider than the box ratio
+                imgHeight = w / imgRatio;
+                imgY = y + (h - imgHeight) / 2;
+              } else {
+                // Image is taller than the box ratio
+                imgWidth = h * imgRatio;
+                imgX = x + (w - imgWidth) / 2;
+              }
+            }
+            
+            // Add the image with calculated dimensions
+            doc.addImage(base64Image, "JPEG", imgX, imgY, imgWidth, imgHeight, null, 'FAST', 0);
             
             // Restore graphics state to remove clipping
             doc.restoreGraphicsState();
@@ -702,7 +707,7 @@ const Report = () => {
             
           } catch (imgError) {
             console.error("Error adding image to PDF:", imgError);
-            doc.text("Image could not be added to PDF. Please check the console for details.", 20, 220);
+            doc.text("Image could not be added to PDF. Please check the console for details.", 20, 180);
           }
           
           // Footer

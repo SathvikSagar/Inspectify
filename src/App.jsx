@@ -68,7 +68,11 @@ const App = () => {
       </Routes>
 
       {/* ToastContainer for displaying notifications */}
-      <ToastContainer position="bottom-right" autoClose={5000} />
+      <ToastContainer 
+        position="bottom-right" 
+        autoClose={5000}
+        theme="colored" 
+      />
     </Router>
   );
 };

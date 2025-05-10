@@ -84,7 +84,7 @@ const Navbar = () => {
         </nav>
 
         {/* Desktop Button */}
-        <div className="hidden md:flex">
+        <div className="hidden md:flex items-center">
           <Link to="/signup">
             <button className="bg-blue-800 text-white hover:bg-gray-800 rounded-full px-5 py-2 text-sm font-medium transition duration-300">
               Get Started
@@ -116,7 +116,7 @@ const Navbar = () => {
 
       {/* Mobile Menu (Dropdown) */}
       {mobileMenuOpen && (
-        <div ref={menuRef} className="md:hidden mt-4 pb-2 animate-fade-in-down mobile-menu-container bg-white rounded-lg shadow-lg border border-gray-200">
+        <div ref={menuRef} className="md:hidden mt-4 pb-2 animate-fade-in-down mobile-menu-container bg-white border-gray-200 rounded-lg shadow-lg border">
           <nav className="flex flex-col divide-y divide-gray-100">
             <Link 
               to="/" 
@@ -168,7 +168,7 @@ const Navbar = () => {
               </svg>
               Contact Us
             </Link>
-            <div className="px-6 py-4">
+            <div className="px-6 py-4 space-y-4">
               <Link 
                 to="/signup" 
                 className="bg-blue-800 text-white hover:bg-blue-900 px-4 py-3 rounded-md transition-colors duration-200 text-center block font-medium"

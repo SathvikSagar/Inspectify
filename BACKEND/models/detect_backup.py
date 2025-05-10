@@ -61,19 +61,10 @@ best_thresholds = {
 }
 
 def get_class_color(cls_name):
-    # Normalize class name (handle both formats with spaces and underscores)
-    normalized_name = cls_name.replace("_", " ").lower()
-    
-    if "pothole" in normalized_name:
-        return [255, 0, 0]  # Red for potholes
-    elif "longitudinal" in normalized_name:
-        return [0, 0, 255]  # Blue for longitudinal cracks
-    elif "lateral" in normalized_name:
-        return [255, 165, 0]  # Orange for lateral cracks
-    elif "alligator" in normalized_name:
-        return [128, 0, 128]  # Purple for alligator cracks
-    
-    # Default color for any unrecognized damage type
+    if cls_name in ["pothole", "alligator crack"]:
+        return [255, 0, 0]  # Red
+    elif cls_name in ["longitudinal crack", "lateral crack"]:
+        return [0, 0, 139]  # Dark Blue
     return [0, 255, 0]  # Green
 
 def get_severity(bboxes, img_width, img_height):
@@ -83,7 +74,9 @@ def get_severity(bboxes, img_width, img_height):
 
     severity = "low"
     if count_score > 5 or area_score > 15 or type_score > 2:
-        severity = "moderate"
+        severity = "moderat, task='detect')
+        
+        # Set all optimizations at once
     if count_score > 10 or area_score > 30:
         severity = "high"
     if count_score > 15 or area_score > 50:
@@ -298,8 +291,61 @@ if __name__ == "__main__":
                 pass
     
     # Add total script time
-    result["total_script_time"] = round(time.time() - script_start, 2)
+    result["total_script_time"] = round(scriptrt, 2)
     print(f"Total script execution time: {result['total_script_time']} seconds")
+    # Print detailed timing information
+    print("\n===== DETECTION TIMING BREAKDOWN =====")
+    for phase, duration in detection_timing.items():
+        print(f"{phase}: {duration:.2f} seconds")
+    print(f"Total detection time: {total_time:.2f} seconds")
+    print("=====================================\n")
+    
+    return result_json
+
+# ======= Script Entry =======
+if __name__ == "__main__":
+    # Start timing the entire script
+    script_start = time.time()
+    
+    # Add detailed timing for each phase
+    timing = {
+        "startup": 0,
+        "model_loading": 0,
+        "argument_parsing": 0,
+        "detection": 0,
+        "json_serialization": 0,
+        "cleanup": 0
+    }
+    
+    phase_start = time.time()
+    
+    # Preload models before processing arguments for faster response
+    # This makes the first run slower but subsequent runs much faster
+    print("Starting model loading...")
+    model_load_start = time.time()
+    load_models()
+    timing["model_loading"] = time.time() - model_load_start
+    print(f"Model loading completed in {timing['model_loading']:.2f} seconds")
+    
+    # Process command line arguments
+    timing["startup"] = model_load_start - script_start
+    arg_start = time.time()
+    timing["argument_parsing"] = time.time() - arg_start
+    print(f"Argument parsing completed in {timing['argument_parsing']:.2f} seconds")
+    
+    # Run detection with optimized processing
+    detection_start = time.time()
+    print("Starting detection...")
+    result = run_detection(image_path, location=location)
+    timing["detection"] = time.time() - detection_start
+    print(f"Detection completed in {timing['detection']:.2f} seconds"timing["cleanup"] = time.time() - cleanup_start
+    
+    # Print final timing summary
+    print("\n===== TIMING SUMMARY =====")
+    for phase, duration in timing.items():
+        print(f"{phase}: {duration:.2f} seconds")
+    print(f"Total Processing Time: {total_script_time:.2f} seconds")
+    print("==========================\n")
     
     # Return result as JSON
-    print(json.dumps(result))
+    print(result)_json

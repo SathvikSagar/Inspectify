@@ -6,50 +6,21 @@ from PIL import Image
 import sys
 import os
 import json
-from pymongo import MongoClient
-from datetime import datetime
-import timm
 import time
+import io
+import numpy as np
+import timm
+from functools import lru_cache
 
 # Enable faster CPU operations if available
 torch.set_num_threads(4)  # Optimal thread count for most systems
-torch.backends.cudnn.benchmark = True
+torch.backends.cudnn.benchmark = True  # Speed up fixed-size image inference
 
-# Start timing
-start_time = time.time()
-
-# ======= Load YOLO model =======
-model_path = r'C:\Users\USER\tailwindsample\BACKEND\models\best.pt'
-yolo_model = YOLO(model_path)
-# Set YOLO to use half precision for faster inference if GPU is available
-yolo_model.model.half() if torch.cuda.is_available() else yolo_model.model.float()
-
-# ======= Load ViT model =======
+# Global variables for models
 device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
-print(f"Using device: {device}")
-
-vit_model = timm.create_model('deit_tiny_patch16_224', pretrained=False)
-vit_model.head = nn.Sequential(
-    nn.Linear(vit_model.head.in_features, 4),
-    nn.Sigmoid()
-)
-vit_model.load_state_dict(torch.load(r'C:\Users\USER\tailwindsample\BACKEND\models\best_vit_multi_label.pth', map_location=device))
-vit_model.to(device)
-vit_model.eval()
-
-# Use half precision for ViT model if GPU is available
-if torch.cuda.is_available():
-    vit_model = vit_model.half()
-
-# Transform for ViT - optimize for speed
-vit_transform = transforms.Compose([
-    transforms.Resize((224, 224)),
-    transforms.ToTensor(),
-    transforms.Normalize(mean=[0.5]*3, std=[0.5]*3)
-])
-
-print(f"Models loaded in {time.time() - start_time:.2f} seconds")
-
+yolo_model = None
+vit_model = None
+vit_transform = None
 vit_labels = ["pothole", "longitudinal_crack", "lateral_crack", "alligator_crack"]
 
 # Custom thresholds for ViT predictions
@@ -60,38 +31,92 @@ best_thresholds = {
     "alligator_crack": 0.01
 }
 
+# Class color mapping for faster lookup
+class_colors = {
+    "pothole": [255, 0, 0],  # Red
+    "alligator_crack": [255, 0, 0],  # Red
+    "longitudinal_crack": [0, 0, 139],  # Dark Blue
+    "lateral_crack": [0, 0, 139],  # Dark Blue
+}
+
+def load_models():
+    """Load models only once and cache them"""
+    global yolo_model, vit_model, vit_transform
+    
+    if yolo_model is None or vit_model is None:
+        start_time = time.time()
+        print(f"Loading models on {device}...")
+        
+        # ======= Load YOLO model =======
+        model_path = os.path.join(os.path.dirname(__file__), "best.pt")
+        yolo_model = YOLO(model_path)
+        
+        # Set YOLO to use half precision for faster inference if GPU is available
+        if torch.cuda.is_available():
+            yolo_model.model.half()
+        else:
+            yolo_model.model.float()
+        
+        # ======= Load ViT model =======
+        vit_model_path = os.path.join(os.path.dirname(__file__), "best_vit_multi_label.pth")
+        vit_model = timm.create_model('deit_tiny_patch16_224', pretrained=False)
+        vit_model.head = nn.Sequential(
+            nn.Linear(vit_model.head.in_features, 4),
+            nn.Sigmoid()
+        )
+        
+        vit_model.load_state_dict(torch.load(vit_model_path, map_location=device))
+        vit_model.to(device)
+        vit_model.eval()
+        
+        # Use half precision for ViT model if GPU is available
+        if torch.cuda.is_available():
+            vit_model = vit_model.half()
+        
+        # Transform for ViT - optimize for speed
+        vit_transform = transforms.Compose([
+            transforms.Resize((224, 224)),
+            transforms.ToTensor(),
+            transforms.Normalize(mean=[0.5]*3, std=[0.5]*3)
+        ])
+        
+        print(f"Models loaded in {time.time() - start_time:.2f} seconds")
+    
+    return yolo_model, vit_model, vit_transform
+
 def get_class_color(cls_name):
-    # Normalize class name (handle both formats with spaces and underscores)
-    normalized_name = cls_name.replace("_", " ").lower()
-    
-    if "pothole" in normalized_name:
-        return [255, 0, 0]  # Red for potholes
-    elif "longitudinal" in normalized_name:
-        return [0, 0, 255]  # Blue for longitudinal cracks
-    elif "lateral" in normalized_name:
-        return [255, 165, 0]  # Orange for lateral cracks
-    elif "alligator" in normalized_name:
-        return [128, 0, 128]  # Purple for alligator cracks
-    
-    # Default color for any unrecognized damage type
-    return [0, 255, 0]  # Green
+    """Get color for class with caching for repeated lookups"""
+    return class_colors.get(cls_name, [0, 255, 0])  # Default to green if not found
 
 def get_severity(bboxes, img_width, img_height):
+    """Calculate severity based on detections"""
+    if not bboxes:
+        return "low", 0, 0, 0
+        
     count_score = len(bboxes)
-    area_score = sum([box['rel_area'] for box in bboxes])
-    type_score = len(set([box['class'] for box in bboxes]))
+    area_score = sum(box['rel_area'] for box in bboxes)
+    
+    # Use set comprehension for unique classes
+    unique_classes = {box['class'] for box in bboxes}
+    type_score = len(unique_classes)
 
-    severity = "low"
-    if count_score > 5 or area_score > 15 or type_score > 2:
-        severity = "moderate"
-    if count_score > 10 or area_score > 30:
-        severity = "high"
+    # Use if-elif chain for better performance than multiple ifs
     if count_score > 15 or area_score > 50:
         severity = "severe"
+    elif count_score > 10 or area_score > 30:
+        severity = "high"
+    elif count_score > 5 or area_score > 15 or type_score > 2:
+        severity = "moderate"
+    else:
+        severity = "low"
+        
     return severity, count_score, area_score, type_score
 
 def run_vit_prediction(image):
     """Optimized ViT prediction function that accepts an already loaded image"""
+    # Ensure models are loaded
+    _, vit_model, vit_transform = load_models()
+    
     # Convert to RGB if not already
     if image.mode != "RGB":
         image = image.convert("RGB")
@@ -111,8 +136,10 @@ def run_vit_prediction(image):
     thresholds = torch.tensor([best_thresholds[label] for label in vit_labels], device=device)
     predicted = (output > thresholds).int().cpu().numpy()
 
+    # Use list comprehension for better performance
     predictions = [label for i, label in enumerate(vit_labels) if predicted[i]]
     return predictions
+
 def calculate_iou(box1, box2):
     """Calculate IoU between two boxes."""
     x1 = max(box1[0], box2[0])
@@ -131,6 +158,9 @@ def calculate_iou(box1, box2):
 
 def merge_boxes(bboxes, iou_threshold=0.5):
     """Merge overlapping boxes of same class using IoU."""
+    if not bboxes:
+        return []
+        
     merged = []
     used = [False] * len(bboxes)
 
@@ -170,7 +200,12 @@ def merge_boxes(bboxes, iou_threshold=0.5):
     return merged
 
 def run_detection(image_path, location=None):
+    """Run road damage detection with optimized processing"""
     detection_start = time.time()
+    
+    # Ensure models are loaded
+    yolo_model, _, _ = load_models()
+    
     try:
         # Load image once and reuse
         image = Image.open(image_path)
@@ -253,16 +288,6 @@ def run_detection(image_path, location=None):
     print(f"Total detection completed in {time.time() - detection_start:.2f} seconds")
     return result_json
 
-def save_to_mongodb(data, image_path):
-    """Save results to MongoDB in a background thread to avoid blocking"""
-    try:
-        # Skip MongoDB save from Python for performance
-        # We'll save the data later in the Node.js server
-        print("Skipping MongoDB save from Python for performance")
-        return
-    except Exception as e:
-        print(f"MongoDB error (non-critical): {e}")
-
 # ======= Script Entry =======
 if __name__ == "__main__":
     script_start = time.time()
@@ -283,19 +308,6 @@ if __name__ == "__main__":
     
     # Run detection
     result = run_detection(image_path, location=location)
-    
-    # Save to MongoDB without waiting for completion
-    if "error" not in result:
-        try:
-            import threading
-            # Start MongoDB save in a separate thread
-            threading.Thread(target=save_to_mongodb, args=(result, image_path)).start()
-        except:
-            # If threading fails, try to save directly but don't block on errors
-            try:
-                save_to_mongodb(result, image_path)
-            except:
-                pass
     
     # Add total script time
     result["total_script_time"] = round(time.time() - script_start, 2)

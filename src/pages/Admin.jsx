@@ -390,7 +390,7 @@ const Admin = () => {
         {activeTab === "Dashboard" && (
           <>
             {/* Modern Header with welcome message */}
-            <div className="mb-10 bg-gradient-to-r from-blue-600 to-blue-800 rounded-2xl shadow-lg p-8 text-white">
+            <div className="mb-10 bg-gradient-to-r from-green-600 to-green-800 rounded-2xl shadow-lg p-12 text-white">
               <div className="flex flex-col md:flex-row md:items-center md:justify-between">
                 <div>
                   <div className="flex items-center gap-3 mb-2">

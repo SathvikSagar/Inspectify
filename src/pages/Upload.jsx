@@ -34,6 +34,7 @@ const Upload = () => {
   const [previewUrl, setPreviewUrl] = useState(null);
   const [analysisResult, setAnalysisResult] = useState(null);
   const [loading, setLoading] = useState(false);
+  const [saving, setSaving] = useState(false);
   const [error, setError] = useState(null);
   const [showMap, setShowMap] = useState(false);
   const [notification, setNotification] = useState(null);
@@ -126,8 +127,9 @@ const Upload = () => {
   };
 
   const handleAnalyzeImage = async () => {
-    if (!imagePath || loading) return;
+    if (!imagePath || loading || saving) return;
     setLoading(true);
+    setSaving(false);
     setError(null);
     setAnalysisResult(null);
     
@@ -204,7 +206,7 @@ const Upload = () => {
       });
       
       // Show success notification with processing time
-      setNotification(`Analysis completed in ${processingTime} seconds!`);
+      setNotification(`Analysis completed in ${processingTime} seconds! Saving results...`);
 
       // Update location if available
       if (data.latitude && data.longitude) {
@@ -213,10 +215,16 @@ const Upload = () => {
         fetchAddress(data.latitude, data.longitude);
       }
 
-      // Save results in background
-      saveAnalysisResult(data).catch(e => 
-        console.error("Error saving analysis result:", e)
-      );
+      // Save results and wait for completion
+      setSaving(true);
+      try {
+        await saveAnalysisResult(data);
+      } catch (e) {
+        console.error("Error saving analysis result:", e);
+        // Don't set error here as we've already analyzed the image successfully
+      } finally {
+        setSaving(false);
+      }
       
     } catch (err) {
       console.error("Analysis error:", err);
@@ -578,18 +586,20 @@ const Upload = () => {
                 <div className="p-5 bg-gradient-to-b from-white to-gray-50 border-t border-gray-100">
                   <button
                     onClick={handleAnalyzeImage}
-                    disabled={loading}
+                    disabled={loading || saving}
                     className="w-full px-5 py-3 bg-gradient-to-r from-green-600 to-green-500 text-white rounded-xl hover:from-green-700 hover:to-green-600 transition-all duration-300 flex items-center justify-center gap-3 font-medium shadow-md hover:shadow-lg transform hover:-translate-y-0.5"
                   >
-                    {loading ? (
+                    {loading || saving ? (
                       <>
                         <BeatLoader color="#fff" size={8} />
-                        <span>Processing Image...</span>
+                        <span>
+                          {saving ? 'Saving Results...' : 'Processing Image...'}
+                        </span>
                       </>
                     ) : (
                       <>
                         <Zap size={20} />
-                        Analyze Damage
+                        {analysisResult ? 'Analyze Again' : 'Analyze Damage'}
                       </>
                     )}
                   </button>

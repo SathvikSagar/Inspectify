@@ -1,0 +1,75 @@
+/* Dark Mode Override Styles */
+
+/* Force dark mode on all elements */
+html.dark-mode,
+body.dark-mode,
+.dark-mode #root,
+.dark-mode main,
+.dark-mode section,
+.dark-mode article,
+.dark-mode div:not([class*="bg-green"]):not([class*="bg-blue"]):not([class*="bg-red"]) {
+  background-color: #111827 !important;
+  color: #f9fafb !important;
+}
+
+/* Force dark mode on specific elements */
+.dark-mode .bg-white,
+.dark-mode .bg-gray-50,
+.dark-mode .bg-gray-100,
+.dark-mode .bg-gray-200 {
+  background-color: #1f2937 !important;
+}
+
+.dark-mode .text-black,
+.dark-mode .text-gray-800,
+.dark-mode .text-gray-900 {
+  color: #f9fafb !important;
+}
+
+.dark-mode .text-gray-600,
+.dark-mode .text-gray-700 {
+  color: #e5e7eb !important;
+}
+
+.dark-mode .border-gray-100,
+.dark-mode .border-gray-200,
+.dark-mode .border-gray-300 {
+  border-color: #374151 !important;
+}
+
+/* Force dark mode on specific components */
+.dark-mode header,
+.dark-mode footer,
+.dark-mode nav,
+.dark-mode aside {
+  background-color: #1f2937 !important;
+  color: #f9fafb !important;
+}
+
+/* Force dark mode on cards and containers */
+.dark-mode .card,
+.dark-mode [class*="shadow"],
+.dark-mode [class*="rounded"] {
+  background-color: #1f2937 !important;
+  border-color: #374151 !important;
+}
+
+/* Force dark mode on inputs and form elements */
+.dark-mode input:not([type="submit"]),
+.dark-mode select,
+.dark-mode textarea,
+.dark-mode button:not([class*="bg-green"]):not([class*="bg-blue"]):not([class*="bg-red"]) {
+  background-color: #374151 !important;
+  color: #f9fafb !important;
+  border-color: #4b5563 !important;
+}
+
+/* Preserve accent colors */
+.dark-mode [class*="text-green"],
+.dark-mode [class*="text-blue"],
+.dark-mode [class*="text-red"],
+.dark-mode [class*="bg-green"],
+.dark-mode [class*="bg-blue"],
+.dark-mode [class*="bg-red"] {
+  /* These will keep their original colors */
+}
