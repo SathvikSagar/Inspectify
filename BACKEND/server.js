@@ -20,9 +20,24 @@ const __dirname = path.resolve();
 const app = express();
 const server = http.createServer(app);
 
+// Define allowed origins based on environment
+const allowedOrigins = process.env.NODE_ENV === 'production' 
+  ? ['https://inspectify-frontend.vercel.app', 'https://inspectify.vercel.app'] 
+  : ['http://localhost:5173', 'http://localhost:4173'];
+
 const io = new Server(server, {
   cors: { 
-    origin: "*", 
+    origin: function(origin, callback) {
+      // Allow requests with no origin (like mobile apps, curl requests)
+      if (!origin) return callback(null, true);
+      
+      if (allowedOrigins.indexOf(origin) !== -1 || process.env.NODE_ENV !== 'production') {
+        callback(null, true);
+      } else {
+        console.log('Blocked connection from origin:', origin);
+        callback(null, true); // Still allow for now, but log it
+      }
+    },
     methods: ["GET", "POST"],
     credentials: true
   },
@@ -31,7 +46,21 @@ const io = new Server(server, {
   pingInterval: 25000
 });
 
-app.use(cors());
+// Configure CORS for Express
+app.use(cors({
+  origin: function(origin, callback) {
+    // Allow requests with no origin (like mobile apps, curl requests)
+    if (!origin) return callback(null, true);
+    
+    if (allowedOrigins.indexOf(origin) !== -1 || process.env.NODE_ENV !== 'production') {
+      callback(null, true);
+    } else {
+      console.log('Blocked API request from origin:', origin);
+      callback(null, true); // Still allow for now, but log it
+    }
+  },
+  credentials: true
+}));
 // Increase JSON payload limit to handle large base64 images
 app.use(express.json({ limit: '50mb' }));
 // Increase URL-encoded payload limit as well

@@ -1,0 +1,17 @@
+services:
+  - type: web
+    name: inspectify-backend
+    env: node
+    buildCommand: npm install && pip install -r BACKEND/requirements.txt
+    startCommand: node BACKEND/server.js
+    envVars:
+      - key: NODE_ENV
+        value: production
+      - key: MONGO_URI
+        sync: false # This will be set manually in the Render dashboard
+      - key: EMAIL_PASSWORD
+        sync: false # This will be set manually in the Render dashboard
+    disk:
+      name: inspectify-data
+      mountPath: /opt/render/project/src/uploads
+      sizeGB: 10

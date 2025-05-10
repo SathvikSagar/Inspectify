@@ -19,7 +19,7 @@ torch.backends.cudnn.benchmark = True
 start_time = time.time()
 
 # ======= Load YOLO model =======
-model_path = r'C:\Users\USER\tailwindsample\BACKEND\models\best.pt'
+model_path = os.path.join(os.path.dirname(__file__), "best.pt")
 yolo_model = YOLO(model_path)
 # Set YOLO to use half precision for faster inference if GPU is available
 yolo_model.model.half() if torch.cuda.is_available() else yolo_model.model.float()
@@ -33,7 +33,7 @@ vit_model.head = nn.Sequential(
     nn.Linear(vit_model.head.in_features, 4),
     nn.Sigmoid()
 )
-vit_model.load_state_dict(torch.load(r'C:\Users\USER\tailwindsample\BACKEND\models\best_vit_multi_label.pth', map_location=device))
+vit_model.load_state_dict(torch.load(os.path.join(os.path.dirname(__file__), "best_vit_multi_label.pth"), map_location=device))
 vit_model.to(device)
 vit_model.eval()
 

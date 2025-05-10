@@ -1,0 +1,6 @@
+torch==2.0.1
+torchvision==0.15.2
+pillow==10.0.0
+ultralytics==8.0.145
+pymongo==4.5.0
+timm==0.9.2
