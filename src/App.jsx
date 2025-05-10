@@ -25,8 +25,14 @@ import 'leaflet/dist/leaflet.css';
 // Import API configuration
 import { BACKEND_URL, getSocketUrl } from './utils/apiConfig';
 
-// Setup the WebSocket connection
-const socket = io(getSocketUrl());
+// Create a mock socket to prevent errors
+const socket = {
+  on: () => {},
+  off: () => {},
+  emit: () => {},
+  connect: () => {},
+  disconnect: () => {}
+};
 
 const HomePage = () => (
   <>

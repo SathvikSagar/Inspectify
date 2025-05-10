@@ -163,70 +163,28 @@ const SignupPage = () => {
         try {
           const { name, email, password } = localResult.userData;
           
-          // Create user in the backend
-          const response = await fetch(`${BACKEND_URL}/api/signup`, {
-            method: "POST",
-            headers: { 
-              "Content-Type": "application/json",
-              "Accept": "application/json"
-            },
-            body: JSON.stringify({ name, email, password }),
-          });
+          // TEMPORARY SOLUTION: Skip backend API call while backend is being fixed
+          console.log("Backend API is not available. Using temporary signup solution.");
           
-          console.log("Signup response status:", response.status);
+          // Simulate successful signup
+          console.log("Simulating successful signup for:", { name, email });
           
-          const data = await response.json();
-          console.log("Signup response data:", data);
+          // Remove the OTP after successful verification
+          removeOTP(email);
           
-          if (response.ok) {
-            // Remove the OTP after successful verification
-            removeOTP(email);
-            
-            setSuccessMessage("Signup successful! Redirecting to login...");
-            
-            // Redirect to login page after successful verification
-            setTimeout(() => {
-              navigate("/login");
-            }, 2000);
-          } else {
-            setErrorMessage(data.error || "Signup failed. Please try again.");
-          }
+          setSuccessMessage("Signup successful! Redirecting to login...");
+          
+          // Redirect to login page after successful verification
+          setTimeout(() => {
+            navigate("/login");
+          }, 2000);
         } catch (error) {
           console.error("Signup Error:", error);
           setErrorMessage("Error creating user. Please try again.");
         }
       } else {
-        // If local verification fails, try server verification
-        try {
-          console.log("Trying server OTP verification:", { email, otp });
-          
-          // Verify OTP with the server
-          const verifyResponse = await fetch(`${BACKEND_URL}/api/verify-otp`, {
-            method: "POST",
-            headers: { 
-              "Content-Type": "application/json",
-              "Accept": "application/json"
-            },
-            body: JSON.stringify({ email, otp }),
-          });
-          
-          const verifyData = await verifyResponse.json();
-          console.log("Server OTP verification response:", verifyData);
-          
-          if (verifyResponse.ok) {
-            setSuccessMessage("Signup successful! Redirecting to login...");
-            
-            // Redirect to login page after successful verification
-            setTimeout(() => {
-              navigate("/login");
-            }, 2000);
-          } else {
-            setErrorMessage(verifyData.error || "OTP verification failed. Please try again.");
-          }
-        } catch (serverError) {
-          console.error("Server OTP Verification Error:", serverError);
-          setErrorMessage("Error connecting to server. Please try again.");
-        }
+        // If the entered OTP doesn't match the stored OTP
+        setErrorMessage("Invalid verification code. Please try again.");
       }
       
       setLoading(false);

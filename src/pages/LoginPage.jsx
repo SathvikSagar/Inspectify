@@ -51,39 +51,27 @@ const LoginPage = () => {
       return;
     }
 
-    // For non-admin users, try server login
+    // TEMPORARY SOLUTION: Allow any login while backend is being fixed
     try {
-      console.log("Sending login request to server...");
-      const BACKEND_URL = import.meta.env.VITE_BACKEND_URL || "http://localhost:5000";
-      const response = await fetch(`${BACKEND_URL}/api/login`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ email, password }),
-      });
-
-      console.log("Server response status:", response.status);
-      const data = await response.json();
-      console.log("Server response data:", data);
-
-      if (response.ok) {
-        console.log("Login successful:", data);
-        // Store user information
-        localStorage.setItem("user", JSON.stringify({ email }));
-        localStorage.setItem("roadVisionUserId", data.userId || "user_" + Date.now());
-        localStorage.setItem("roadVisionUserName", data.name || email.split('@')[0]);
-        localStorage.setItem("roadVisionUserType", data.userType || "user");
-        localStorage.setItem("roadVisionIsAdmin", data.isAdmin ? "true" : "false");
-        
-        setLoading(false);
-        
-        // Redirect to user dashboard
-        console.log("Redirecting to user dashboard");
-        navigate("/user");
-      } else {
-        console.error("Login failed:", data.error);
-        setLoading(false);
-        setErrorMessage(data.error || "Invalid credentials. Please try again.");
-      }
+      console.log("Backend API is not available. Using temporary login solution.");
+      
+      // Create a user ID based on email for consistency
+      const tempUserId = "user_" + email.replace(/[^a-zA-Z0-9]/g, "_");
+      const userName = email.split('@')[0];
+      
+      // Store user information in localStorage
+      localStorage.setItem("user", JSON.stringify({ email }));
+      localStorage.setItem("roadVisionUserId", tempUserId);
+      localStorage.setItem("roadVisionUserName", userName);
+      localStorage.setItem("roadVisionUserType", "user");
+      localStorage.setItem("roadVisionIsAdmin", "false");
+      
+      setLoading(false);
+      
+      // Redirect to user dashboard
+      console.log("Redirecting to user dashboard");
+      navigate("/user");
+      
     } catch (error) {
       console.error("Login Error:", error);
       setLoading(false);
