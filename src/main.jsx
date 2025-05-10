@@ -5,6 +5,12 @@ import App from './App.jsx'
 import './index.css'
 import 'leaflet/dist/leaflet.css';
 import SimpleLoader from './components/SimpleLoader.jsx';
+import { DarkModeProvider } from './context/DarkModeContext';
+
+// Remove any dark mode classes from document
+document.documentElement.classList.remove('dark-mode');
+document.body.classList.remove('dark-mode');
+localStorage.setItem('darkMode', 'false');
 
 const Root = () => {
   const [loading, setLoading] = useState(true);
@@ -20,7 +26,9 @@ const Root = () => {
 
   return (
     <React.StrictMode>
-      {loading ? <SimpleLoader /> : <App />}
+      <DarkModeProvider>
+        {loading ? <SimpleLoader /> : <App />}
+      </DarkModeProvider>
     </React.StrictMode>
   );
 };
