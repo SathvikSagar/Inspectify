@@ -1,7 +1,7 @@
 // API Configuration Utility
 
 // Get the backend URL from environment variables or fallback to production URL
-export const BACKEND_URL = import.meta.env.VITE_BACKEND_URL || "https://inspectify-backend.onrender.com";
+export const BACKEND_URL = import.meta.env.VITE_BACKEND_URL || "https://safe-street-road-damage-detection-system-pshdpfdg7.vercel.app";
 
 // Helper function to create full API URLs
 export const getApiUrl = (endpoint) => {

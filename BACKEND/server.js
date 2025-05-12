@@ -13,9 +13,15 @@ import nodemailer from "nodemailer";
 
 dotenv.config();
 
-const PORT = 5000;
+const PORT = process.env.PORT || 5000;
 const MONGO_URI = process.env.MONGO_URI || "mongodb://localhost:27017/Inspectify";
 const __dirname = path.resolve();
+
+// Define storage directories based on environment
+const isProduction = process.env.NODE_ENV === 'production';
+const STORAGE_DIR = isProduction ? '/tmp' : __dirname;
+const UPLOADS_DIR = path.join(STORAGE_DIR, isProduction ? 'uploads' : 'uploads');
+const FINAL_DIR = path.join(STORAGE_DIR, isProduction ? 'final' : 'final');
 
 const app = express();
 const server = http.createServer(app);
@@ -36,12 +42,19 @@ app.use(cors());
 app.use(express.json({ limit: '50mb' }));
 // Increase URL-encoded payload limit as well
 app.use(express.urlencoded({ limit: '50mb', extended: true }));
-app.use("/uploads", express.static(path.join(__dirname, "uploads")));
-app.use("/final", express.static(path.join(__dirname, "final")));
+app.use("/uploads", express.static(UPLOADS_DIR));
+app.use("/final", express.static(FINAL_DIR));
 
-["uploads", "final"].forEach((dir) => {
-  const fullPath = path.join(__dirname, dir);
-  if (!fs.existsSync(fullPath)) fs.mkdirSync(fullPath);
+// Create necessary directories
+[UPLOADS_DIR, FINAL_DIR].forEach((dir) => {
+  if (!fs.existsSync(dir)) {
+    try {
+      fs.mkdirSync(dir, { recursive: true });
+      console.log(`Created directory: ${dir}`);
+    } catch (err) {
+      console.warn(`Warning: Could not create directory ${dir}:`, err.message);
+    }
+  }
 });
 
 mongoose
@@ -285,10 +298,22 @@ app.post("/predict", upload.single("image"), async (req, res) => {
     if (!req.file) return res.status(400).json({ error: "No image file received!" });
 
     const timestamp = getFormattedTimestamp();
-    const tempImagePath = `temp_${timestamp}.jpg`;
-    fs.writeFileSync(tempImagePath, req.file.buffer);
+    const tempImagePath = path.join(STORAGE_DIR, `temp_${timestamp}.jpg`);
+    
+    try {
+      fs.writeFileSync(tempImagePath, req.file.buffer);
+      console.log(`Temporary image saved to: ${tempImagePath}`);
+    } catch (err) {
+      console.error(`Error saving temporary image: ${err.message}`);
+      return res.status(500).json({ error: "Failed to save temporary image" });
+    }
 
-    const pythonProcess = spawn("python", ["models/predict.py", tempImagePath]);
+    // For Vercel, we need to use the full path to the Python executable and script
+    const pythonExecutable = isProduction ? 'python3' : 'python';
+    const pythonScriptPath = path.join(__dirname, 'models', isProduction ? 'predict_vercel.py' : 'predict.py');
+    
+    console.log(`Running Python prediction: ${pythonExecutable} ${pythonScriptPath} ${tempImagePath}`);
+    const pythonProcess = spawn(pythonExecutable, [pythonScriptPath, tempImagePath]);
 
     let predictionResult = "";
 
@@ -301,7 +326,14 @@ app.post("/predict", upload.single("image"), async (req, res) => {
     });
 
     pythonProcess.on("close", async (code) => {
-      fs.unlinkSync(tempImagePath);
+      try {
+        if (fs.existsSync(tempImagePath)) {
+          fs.unlinkSync(tempImagePath);
+          console.log(`Temporary image deleted: ${tempImagePath}`);
+        }
+      } catch (err) {
+        console.warn(`Warning: Could not delete temporary file ${tempImagePath}:`, err.message);
+      }
 
       // Extract just the prediction (Road or Not a Road) from the output
       // The output now includes confidence information
@@ -322,7 +354,15 @@ app.post("/predict", upload.single("image"), async (req, res) => {
         const originalName = req.file.originalname.replace(/\s+/g, "_");
         const filename = `${originalName.split(".")[0]}_${timestamp}.jpg`;
         savedImagePath = path.join("uploads", filename);
-        fs.writeFileSync(path.join(__dirname, savedImagePath), req.file.buffer);
+        const fullSavedPath = path.join(UPLOADS_DIR, filename);
+        
+        try {
+          fs.writeFileSync(fullSavedPath, req.file.buffer);
+          console.log(`Image saved to: ${fullSavedPath}`);
+        } catch (err) {
+          console.error(`Error saving image: ${err.message}`);
+          return res.status(500).json({ error: "Failed to save image" });
+        }
 
         // Save with userId (required)
         if (!userId) {
@@ -756,7 +796,7 @@ const transporter = nodemailer.createTransport({
   secure: true,
   auth: {
     user: 'venkatmadhu232@gmail.com',
-    pass: process.env.EMAIL_PASSWORD // Using app password from .env file (ajndrrtnrmknvcaj)
+    pass: process.env.EMAIL_PASSWORD // Using password from .env file (VENKAT1551971)
   },
   // Debug options to help troubleshoot email issues
   debug: true,

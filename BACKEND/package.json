@@ -4,7 +4,9 @@
   "type": "module",
   "main": "server.js",
   "scripts": {
-    "start": "node server.js"
+    "start": "node server.js",
+    "build": "chmod +x vercel-build.sh && ./vercel-build.sh",
+    "vercel-build": "pip install -r vercel-requirements.txt"
   },
   "dependencies": {
     "bcrypt": "^5.1.1",

@@ -2,15 +2,68 @@
 <html lang="en">
   <head>
     <meta charset="UTF-8" />
-    <link rel="icon" type="image/svg+xml" href="/vite.svg" />
+    <!-- Favicon with circular mask -->
+    <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
+    <link rel="alternate icon" type="image/png" type="image/svg+xml" href="/lago.png" />
+    <link rel="alternate icon" type="image/png" href="/lago.png" />
+    <link rel="apple-touch-icon" href="/lago.png">
+    
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
     
-    <title>Vite + React</title>
-    <script type="module" crossorigin src="/assets/index-BoYjyxin.js"></script>
-    <link rel="stylesheet" crossorigin href="/assets/index-CEEPkBUJ.css">
+    <title>Inspectify - Streamline Road Inspection with AI</title>
+    
+    <style>
+      /* Dark mode variables */
+      :root {
+        --bg-primary: #ffffff;
+        --bg-secondary: #f9fafb;
+        --text-primary: #111827;
+        --text-secondary: #4b5563;
+        --border-color: #e5e7eb;
+        --card-bg: #ffffff;
+      }
+      
+      .dark-mode {
+        --bg-primary: #111827;
+        --bg-secondary: #1f2937;
+        --text-primary: #f9fafb;
+        --text-secondary: #e5e7eb;
+        --border-color: #374151;
+        --card-bg: #1f2937;
+      }
+      
+      /* Apply dark mode styles */
+      .dark-mode body {
+        background-color: var(--bg-primary);
+        color: var(--text-primary);
+      }
+      
+      /* Ensure smooth transitions */
+      body, div, section, header, footer, main, aside, nav {
+        transition: background-color 0.3s ease, color 0.3s ease, border-color 0.3s ease;
+      }
+    </style>
+    <script type="module" crossorigin src="/assets/index-DE-lsb8T.js"></script>
+    <link rel="stylesheet" crossorigin href="/assets/index-DFHgOUtg.css">
   </head>
   <body>
-    <div id="root"></div>
+    <div id="root"></div>
+    
+    <script>
+      // Check for dark mode preference
+      const savedDarkMode = localStorage.getItem('darkMode');
+      if (savedDarkMode === 'true') {
+        document.documentElement.classList.add('dark-mode');
+        document.body.classList.add('dark-mode');
+        document.body.style.backgroundColor = '#111827';
+        document.body.style.color = '#f9fafb';
+      } else if (savedDarkMode === null && window.matchMedia('(prefers-color-scheme: dark)').matches) {
+        document.documentElement.classList.add('dark-mode');
+        document.body.classList.add('dark-mode');
+        document.body.style.backgroundColor = '#111827';
+        document.body.style.color = '#f9fafb';
+      }
+    </script>
   </body>
 </html>
