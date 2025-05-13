@@ -1,7 +1,7 @@
 // API Configuration Utility
 
-// Get the backend URL from environment variables or fallback to production URL
-export const BACKEND_URL = import.meta.env.VITE_BACKEND_URL || "https://safe-street-road-damage-detection-system-pshdpfdg7.vercel.app";
+// Get the backend URL from environment variables or fallback to local development URL
+export const BACKEND_URL = import.meta.env.VITE_BACKEND_URL || "http://localhost:5000";
 
 // Helper function to create full API URLs
 export const getApiUrl = (endpoint) => {

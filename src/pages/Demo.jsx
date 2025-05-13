@@ -229,38 +229,56 @@ const Demo = () => {
   ];
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-indigo-50 via-blue-50 to-purple-50 py-12 px-4 sm:px-6 relative overflow-hidden">
+    <div className="min-h-screen bg-gradient-to-br from-green-50 via-emerald-50 to-teal-50 py-12 px-4 sm:px-6 relative overflow-hidden">
       {/* Add custom animation styles */}
       <style dangerouslySetInnerHTML={{ __html: customStyles }} />
-      {/* Enhanced Loading screen */}
+      
+      {/* Modern geometric shapes */}
+      <div className="absolute top-0 right-0 w-64 h-64 bg-green-400/10 rounded-full -mt-32 -mr-32 backdrop-blur-3xl"></div>
+      <div className="absolute bottom-0 left-0 w-96 h-96 bg-teal-400/10 rounded-full -mb-48 -ml-48 backdrop-blur-3xl"></div>
+      <div className="absolute top-1/3 right-1/4 w-24 h-24 bg-emerald-400/10 rounded-lg rotate-12 backdrop-blur-xl"></div>
+      <div className="absolute bottom-1/4 right-1/3 w-32 h-32 bg-green-400/10 rounded-lg -rotate-12 backdrop-blur-xl"></div>
+      {/* Modern Loading screen with animated elements */}
       {isLoading && (
-        <div className="fixed inset-0 bg-gradient-to-br from-indigo-900 to-blue-900 z-50 flex flex-col items-center justify-center">
-          <div className="relative">
-            <div className="w-28 h-28 border-t-4 border-b-4 border-blue-400 rounded-full animate-spin"></div>
-            <div className="w-20 h-20 border-t-4 border-b-4 border-indigo-500 rounded-full animate-spin absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2" style={{ animationDirection: 'reverse', animationDuration: '1s' }}></div>
-            <div className="w-12 h-12 border-t-4 border-b-4 border-purple-500 rounded-full animate-spin absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2" style={{ animationDuration: '0.5s' }}></div>
+        <div className="fixed inset-0 bg-gradient-to-br from-green-900 to-emerald-900 z-50 flex flex-col items-center justify-center overflow-hidden">
+          {/* Background animated shapes */}
+          <div className="absolute w-full h-full overflow-hidden">
+            <div className="absolute top-1/4 left-1/4 w-64 h-64 bg-green-500/10 rounded-full mix-blend-overlay animate-pulse"></div>
+            <div className="absolute bottom-1/4 right-1/4 w-96 h-96 bg-teal-500/10 rounded-full mix-blend-overlay animate-pulse" style={{ animationDelay: '1s' }}></div>
+            <div className="absolute top-3/4 left-1/3 w-48 h-48 bg-emerald-500/10 rounded-full mix-blend-overlay animate-pulse" style={{ animationDelay: '2s' }}></div>
           </div>
-          <h2 className="text-2xl font-bold text-white mt-8 mb-2">Loading Demo...</h2>
-          <p className="text-blue-200 text-center max-w-md">Preparing your interactive road damage detection experience</p>
           
-          <div className="mt-8 flex space-x-2">
-            <div className="w-3 h-3 rounded-full bg-blue-400 animate-bounce"></div>
-            <div className="w-3 h-3 rounded-full bg-indigo-400 animate-bounce" style={{ animationDelay: '0.2s' }}></div>
-            <div className="w-3 h-3 rounded-full bg-purple-400 animate-bounce" style={{ animationDelay: '0.4s' }}></div>
+          {/* Modern spinner */}
+          <div className="relative">
+            <div className="w-32 h-32 rounded-full bg-gradient-to-r from-green-400 via-emerald-500 to-teal-500 p-1 animate-spin">
+              <div className="w-full h-full bg-green-900 rounded-full"></div>
+            </div>
+            <div className="absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 w-24 h-24 rounded-full bg-gradient-to-r from-teal-400 via-green-500 to-emerald-500 p-1 animate-spin" style={{ animationDirection: 'reverse', animationDuration: '1.5s' }}>
+              <div className="w-full h-full bg-green-900 rounded-full"></div>
+            </div>
+            <div className="absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 w-16 h-16 rounded-full bg-white/10 backdrop-blur-lg flex items-center justify-center">
+              <div className="w-10 h-10 bg-gradient-to-br from-green-400 to-teal-500 rounded-full animate-pulse"></div>
+            </div>
           </div>
+          
+          <h2 className="text-3xl font-bold text-white mt-10 mb-2 tracking-tight">Loading Demo</h2>
+          <div className="h-1 w-48 bg-green-900 rounded-full overflow-hidden mt-1 mb-4">
+            <div className="h-full bg-gradient-to-r from-green-400 via-emerald-500 to-teal-400 animate-shimmer"></div>
+          </div>
+          <p className="text-green-200 text-center max-w-md font-light">Preparing your interactive road damage detection experience</p>
         </div>
       )}
       
       {/* Enhanced Background decorative elements */}
       <div className="absolute top-0 left-0 w-full h-full overflow-hidden z-0">
         {/* Main blobs */}
-        <div className="absolute top-0 right-0 bg-gradient-to-br from-blue-400 to-blue-500 rounded-full w-[40rem] h-[40rem] -mt-24 -mr-24 filter blur-3xl animate-pulse opacity-20"></div>
-        <div className="absolute bottom-0 left-0 bg-gradient-to-tr from-green-400 to-emerald-500 rounded-full w-[40rem] h-[40rem] -mb-24 -ml-24 filter blur-3xl animate-pulse opacity-20" style={{ animationDelay: '2s' }}></div>
-        <div className="absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 bg-gradient-to-br from-purple-400 to-indigo-500 rounded-full w-[40rem] h-[40rem] filter blur-3xl opacity-10 animate-pulse" style={{ animationDelay: '4s' }}></div>
+        <div className="absolute top-0 right-0 bg-gradient-to-br from-green-400 to-emerald-500 rounded-full w-[40rem] h-[40rem] -mt-24 -mr-24 filter blur-3xl animate-pulse opacity-20"></div>
+        <div className="absolute bottom-0 left-0 bg-gradient-to-tr from-emerald-400 to-green-500 rounded-full w-[40rem] h-[40rem] -mb-24 -ml-24 filter blur-3xl animate-pulse opacity-20" style={{ animationDelay: '2s' }}></div>
+        <div className="absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 bg-gradient-to-br from-teal-400 to-green-500 rounded-full w-[40rem] h-[40rem] filter blur-3xl opacity-10 animate-pulse" style={{ animationDelay: '4s' }}></div>
         
         {/* Additional decorative elements */}
-        <div className="absolute top-1/4 right-1/4 bg-gradient-to-br from-teal-300 to-cyan-400 rounded-full w-[30rem] h-[30rem] filter blur-3xl opacity-10 animate-pulse" style={{ animationDelay: '3s' }}></div>
-        <div className="absolute bottom-1/4 right-1/3 bg-gradient-to-br from-yellow-300 to-amber-400 rounded-full w-[25rem] h-[25rem] filter blur-3xl opacity-10 animate-pulse" style={{ animationDelay: '5s' }}></div>
+        <div className="absolute top-1/4 right-1/4 bg-gradient-to-br from-green-300 to-teal-400 rounded-full w-[30rem] h-[30rem] filter blur-3xl opacity-10 animate-pulse" style={{ animationDelay: '3s' }}></div>
+        <div className="absolute bottom-1/4 right-1/3 bg-gradient-to-br from-emerald-300 to-green-400 rounded-full w-[25rem] h-[25rem] filter blur-3xl opacity-10 animate-pulse" style={{ animationDelay: '5s' }}></div>
         
         {/* Small floating particles */}
         <div className="absolute top-1/3 left-1/4 bg-white w-8 h-8 rounded-full opacity-20 animate-float"></div>
@@ -269,48 +287,59 @@ const Demo = () => {
         <div className="absolute bottom-1/3 right-1/3 bg-white w-5 h-5 rounded-full opacity-20 animate-float" style={{ animationDelay: '3s', animationDuration: '7s' }}></div>
       </div>
 
-      {/* Enhanced Main content container */}
+      {/* Enhanced Main content container with glass morphism */}
       <div 
         ref={containerRef} 
-        className="max-w-6xl mx-auto relative z-10 bg-white/90 backdrop-blur-xl rounded-3xl shadow-2xl p-8 sm:p-10 border border-white/30 transition-all duration-500 hover:shadow-[0_20px_60px_-15px_rgba(0,0,0,0.2)]"
+        className="max-w-6xl mx-auto relative z-10 bg-white/80 backdrop-blur-2xl rounded-[2.5rem] shadow-2xl p-8 sm:p-10 border border-white/40 transition-all duration-500 hover:shadow-[0_25px_80px_-15px_rgba(0,128,0,0.25)] overflow-hidden"
         style={{
-          boxShadow: '0 10px 40px -10px rgba(0, 0, 0, 0.1), 0 0 80px 0 rgba(0, 0, 0, 0.05) inset'
+          boxShadow: '0 15px 50px -12px rgba(0, 128, 0, 0.15), 0 0 100px 0 rgba(255, 255, 255, 0.2) inset'
         }}
       >
-        {/* Enhanced Progress bar */}
-        <div className="w-full h-3 bg-gray-100 rounded-full mb-8 overflow-hidden shadow-inner">
+        {/* Modern decorative elements */}
+        <div className="absolute -top-24 -right-24 w-48 h-48 bg-gradient-to-br from-green-300/20 to-teal-300/20 rounded-full blur-2xl"></div>
+        <div className="absolute -bottom-24 -left-24 w-48 h-48 bg-gradient-to-tr from-emerald-300/20 to-green-300/20 rounded-full blur-2xl"></div>
+        {/* Modern Progress bar with animated indicator */}
+        <div className="w-full h-2 bg-gray-100/50 rounded-full mb-10 overflow-hidden shadow-inner backdrop-blur-sm">
           <div 
-            className="h-full bg-gradient-to-r from-blue-500 via-indigo-500 to-purple-600 rounded-full transition-all duration-500 ease-out relative"
+            className="h-full bg-gradient-to-r from-green-400 via-emerald-500 to-teal-500 rounded-full transition-all duration-700 ease-out relative"
             style={{ width: `${(currentSlide / 8) * 100}%` }}
           >
-            <div className="absolute inset-0 bg-white/20 overflow-hidden rounded-full">
-              <div className="h-full w-full bg-gradient-to-r from-transparent via-white/20 to-transparent animate-shimmer"></div>
+            <div className="absolute inset-0 overflow-hidden rounded-full">
+              <div className="h-full w-full bg-gradient-to-r from-transparent via-white/30 to-transparent animate-shimmer"></div>
             </div>
+            <div className="absolute right-0 top-1/2 transform translate-x-1/2 -translate-y-1/2 w-4 h-4 bg-white rounded-full shadow-lg shadow-green-500/30 border-2 border-teal-500"></div>
           </div>
         </div>
 
-        {/* Enhanced Welcome Text Only for First Slide */}
+        {/* Modern Welcome Text with enhanced typography */}
         {currentSlide === 1 && (
-          <div className={`relative transition-all duration-1000 mb-8 ${isVisible.welcomeText ? 'opacity-100 transform translate-y-0' : 'opacity-0 transform -translate-y-4'}`}>
-            <h1 className="text-5xl sm:text-6xl font-extrabold text-center mb-4 bg-gradient-to-r from-blue-600 via-indigo-600 to-purple-600 bg-clip-text text-transparent">
-              Welcome to the Road Damage Detection Demo!
+          <div className={`relative transition-all duration-1000 mb-12 ${isVisible.welcomeText ? 'opacity-100 transform translate-y-0' : 'opacity-0 transform -translate-y-4'}`}>
+            <div className="absolute -top-10 -left-10 w-20 h-20 bg-green-400/10 rounded-full blur-xl"></div>
+            <div className="absolute -bottom-10 -right-10 w-20 h-20 bg-teal-400/10 rounded-full blur-xl"></div>
+            
+            <h1 className="text-5xl sm:text-6xl font-black text-center mb-6 bg-gradient-to-r from-green-600 via-emerald-500 to-teal-600 bg-clip-text text-transparent tracking-tight leading-tight">
+              Welcome to the Road Damage Detection Demo
             </h1>
-            <p className="text-center text-gray-600 max-w-3xl mx-auto text-lg">
+            
+            <p className="text-center text-gray-600 max-w-3xl mx-auto text-lg font-light leading-relaxed">
               Explore our interactive guide to learn how our platform helps identify and report road damage efficiently.
             </p>
-            <div className="absolute -bottom-6 left-1/2 transform -translate-x-1/2 w-24 h-1 bg-gradient-to-r from-blue-500 to-purple-600 rounded-full"></div>
+            
+            <div className="flex justify-center mt-8">
+              <div className="h-1 w-32 bg-gradient-to-r from-green-400 to-teal-500 rounded-full"></div>
+            </div>
           </div>
         )}
 
-        {/* Enhanced Step Text */}
-        <div className="relative mb-12">
-          <div className="absolute -left-5 top-0 w-12 h-12 rounded-xl bg-gradient-to-br from-blue-500 to-purple-600 flex items-center justify-center text-white font-bold shadow-lg transform rotate-3 hover:rotate-0 transition-transform">
-            <span className="text-xl">{currentSlide}</span>
+        {/* Modern Step Text with enhanced styling */}
+        <div className="relative mb-14">
+          <div className="absolute -left-6 top-0 w-14 h-14 rounded-2xl bg-gradient-to-br from-green-500 to-teal-600 flex items-center justify-center text-white font-bold shadow-xl transform rotate-6 hover:rotate-0 transition-transform duration-300 backdrop-blur-sm">
+            <span className="text-2xl">{currentSlide}</span>
           </div>
           <div className={`relative transition-all duration-1000 ${isVisible.stepText ? 'opacity-100 transform translate-y-0' : 'opacity-0 transform translate-y-4'}`}>
-            <div className="absolute inset-0 bg-gradient-to-r from-indigo-500/5 to-purple-500/5 rounded-2xl transform rotate-1"></div>
-            <div className="px-8 py-6 rounded-2xl bg-gradient-to-r from-indigo-50 to-purple-50 border border-indigo-100/50 shadow-lg relative z-10">
-              <div className="absolute top-0 right-0 -mt-4 -mr-4 bg-gradient-to-br from-indigo-500 to-purple-600 text-white text-xs font-bold px-3 py-1 rounded-full shadow-md">
+            <div className="absolute inset-0 bg-gradient-to-r from-green-500/5 to-teal-500/5 rounded-[1.5rem] transform rotate-1"></div>
+            <div className="px-10 py-8 rounded-[1.5rem] bg-gradient-to-r from-green-50/80 to-teal-50/80 border border-green-100/60 shadow-xl relative z-10 backdrop-blur-sm">
+              <div className="absolute top-0 right-0 -mt-4 -mr-4 bg-gradient-to-br from-green-500 to-teal-600 text-white text-xs font-bold px-4 py-2 rounded-full shadow-lg">
                 {slideContent[currentSlide - 1].step}
               </div>
               <h2 className="text-2xl font-bold text-indigo-800 mb-3">{slideContent[currentSlide - 1].step}</h2>
@@ -325,11 +354,11 @@ const Demo = () => {
           {isVisible.prevButton && currentSlide > 1 && (
             <button
               onClick={handlePreviousClick}
-              className="absolute -left-5 sm:left-0 z-20 flex items-center justify-center w-14 h-14 bg-white rounded-full shadow-xl transition-all duration-300 hover:shadow-2xl hover:scale-110 border border-gray-100 group"
+              className="absolute -left-7 sm:left-0 z-20 flex items-center justify-center w-16 h-16 bg-white/90 backdrop-blur-md rounded-2xl shadow-xl transition-all duration-300 hover:shadow-2xl hover:scale-105 border border-green-100/50 group"
               aria-label="Previous slide"
             >
-              <div className="absolute inset-0 bg-gradient-to-br from-blue-500/10 to-indigo-500/10 rounded-full opacity-0 group-hover:opacity-100 transition-opacity"></div>
-              <svg width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" className="text-gray-700 group-hover:text-blue-600 transition-colors">
+              <div className="absolute inset-0 bg-gradient-to-br from-green-500/10 to-teal-500/10 rounded-2xl opacity-0 group-hover:opacity-100 transition-opacity"></div>
+              <svg width="28" height="28" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" className="text-gray-700 group-hover:text-green-600 transition-colors">
                 <path d="M15 19L8 12L15 5" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
               </svg>
             </button>
@@ -340,12 +369,12 @@ const Demo = () => {
             {currentSlide === 4 || currentSlide === 5 || currentSlide === 7 || currentSlide === 8 ? (
               <div className={`transition-all duration-1000 transform ${isVisible.firstImage ? 'opacity-100 scale-100' : 'opacity-0 scale-95'}`}>
                 <div className="relative group">
-                  <div className="absolute -inset-1 bg-gradient-to-r from-blue-500 to-purple-600 rounded-2xl blur opacity-25 group-hover:opacity-50 transition duration-1000 group-hover:duration-200"></div>
-                  <div className="relative">
+                  <div className="absolute -inset-2 bg-gradient-to-r from-green-500 to-teal-600 rounded-3xl blur-md opacity-25 group-hover:opacity-60 transition duration-500 group-hover:duration-200"></div>
+                  <div className="relative p-1 bg-gradient-to-r from-green-400/50 to-teal-500/50 rounded-2xl backdrop-blur-sm">
                     <img
                       src={slideContent[currentSlide - 1].img1}
                       alt={`${slideContent[currentSlide - 1].step} demonstration`}
-                      className="w-auto max-w-full h-auto max-h-[400px] object-contain rounded-xl shadow-2xl border-4 border-white bg-white"
+                      className="w-auto max-w-full h-auto max-h-[400px] object-contain rounded-xl shadow-xl border-2 border-white/80 bg-white/90"
                     />
                   </div>
                 </div>
@@ -354,21 +383,22 @@ const Demo = () => {
               <div className="flex flex-col sm:flex-row items-center gap-6 w-full justify-center">
                 <div className={`transition-all duration-1000 transform ${isVisible.firstImage ? 'opacity-100 scale-100' : 'opacity-0 scale-95'}`}>
                   <div className="relative group">
-                    <div className="absolute -inset-1 bg-gradient-to-r from-blue-500 to-indigo-600 rounded-2xl blur opacity-25 group-hover:opacity-50 transition duration-1000 group-hover:duration-200"></div>
-                    <div className="relative">
+                    <div className="absolute -inset-2 bg-gradient-to-r from-green-500 to-emerald-600 rounded-3xl blur-md opacity-25 group-hover:opacity-60 transition duration-500 group-hover:duration-200"></div>
+                    <div className="relative p-1 bg-gradient-to-r from-green-400/50 to-emerald-500/50 rounded-2xl backdrop-blur-sm">
                       <img
                         src={slideContent[currentSlide - 1].img1}
                         alt={`${slideContent[currentSlide - 1].step} before`}
-                        className="w-auto max-w-full h-auto max-h-[350px] object-contain rounded-xl shadow-2xl border-4 border-white bg-white"
+                        className="w-auto max-w-full h-auto max-h-[350px] object-contain rounded-xl shadow-xl border-2 border-white/80 bg-white/90"
                       />
                     </div>
                   </div>
                 </div>
                 
                 <div className={`transition-all duration-1000 ${isVisible.arrow ? 'opacity-100' : 'opacity-0'}`}>
-                  <div className="relative w-20 h-20 flex items-center justify-center">
-                    <div className="absolute inset-0 bg-gradient-to-r from-blue-400 to-indigo-500 rounded-full animate-pulse opacity-70"></div>
-                    <svg width="40" height="40" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" className="relative z-10 text-white">
+                  <div className="relative w-24 h-24 flex items-center justify-center">
+                    <div className="absolute inset-0 bg-gradient-to-r from-green-400 to-teal-500 rounded-2xl rotate-45 animate-pulse opacity-70 backdrop-blur-sm"></div>
+                    <div className="absolute inset-2 bg-white/30 rounded-xl rotate-45 backdrop-blur-md"></div>
+                    <svg width="40" height="40" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" className="relative z-10 text-white drop-shadow-lg">
                       <path d="M5 12H19M19 12L12 5M19 12L12 19" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
                     </svg>
                   </div>
@@ -377,12 +407,12 @@ const Demo = () => {
                 {slideContent[currentSlide - 1].img2 && (
                   <div className={`transition-all duration-1000 transform ${isVisible.secondImage ? 'opacity-100 scale-100' : 'opacity-0 scale-95'}`}>
                     <div className="relative group">
-                      <div className="absolute -inset-1 bg-gradient-to-r from-indigo-500 to-purple-600 rounded-2xl blur opacity-25 group-hover:opacity-50 transition duration-1000 group-hover:duration-200"></div>
-                      <div className="relative">
+                      <div className="absolute -inset-2 bg-gradient-to-r from-emerald-500 to-teal-600 rounded-3xl blur-md opacity-25 group-hover:opacity-60 transition duration-500 group-hover:duration-200"></div>
+                      <div className="relative p-1 bg-gradient-to-r from-emerald-400/50 to-teal-500/50 rounded-2xl backdrop-blur-sm">
                         <img
                           src={slideContent[currentSlide - 1].img2}
                           alt={`${slideContent[currentSlide - 1].step} after`}
-                          className="w-auto max-w-full h-auto max-h-[350px] object-contain rounded-xl shadow-2xl border-4 border-white bg-white"
+                          className="w-auto max-w-full h-auto max-h-[350px] object-contain rounded-xl shadow-xl border-2 border-white/80 bg-white/90"
                         />
                       </div>
                     </div>
@@ -396,22 +426,23 @@ const Demo = () => {
           {isVisible.nextButton && currentSlide < 8 && (
             <button
               onClick={handleNextClick}
-              className="absolute -right-5 sm:right-0 z-20 flex items-center justify-center w-14 h-14 bg-gradient-to-r from-blue-500 to-indigo-600 rounded-full shadow-xl transition-all duration-300 hover:shadow-2xl hover:scale-110 group"
+              className="absolute -right-7 sm:right-0 z-20 flex items-center justify-center w-16 h-16 bg-gradient-to-r from-green-500 to-teal-600 rounded-2xl shadow-xl transition-all duration-300 hover:shadow-2xl hover:scale-105 group"
               aria-label="Next slide"
             >
-              <div className="absolute inset-0 bg-gradient-to-br from-blue-400 to-indigo-500 rounded-full opacity-0 group-hover:opacity-100 transition-opacity"></div>
-              <svg width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" className="text-white">
+              <div className="absolute inset-0 bg-gradient-to-br from-green-400 to-teal-500 rounded-2xl opacity-0 group-hover:opacity-100 transition-opacity"></div>
+              <svg width="28" height="28" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" className="text-white">
                 <path d="M9 5L16 12L9 19" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
               </svg>
-              <span className="absolute -right-2 -top-2 w-7 h-7 rounded-full bg-white text-indigo-600 flex items-center justify-center text-xs font-bold border-2 border-indigo-500 shadow-md">
+              <span className="absolute -right-3 -top-3 w-8 h-8 rounded-xl bg-white text-green-600 flex items-center justify-center text-sm font-bold border-2 border-green-500 shadow-lg">
                 {currentSlide + 1}
               </span>
             </button>
           )}
         </div>
 
-        {/* Enhanced Dot Navigation with labels */}
-        <div className="flex flex-wrap justify-center gap-4 mt-12">
+        {/* Modern Dot Navigation with enhanced styling */}
+        <div className="flex flex-wrap justify-center gap-5 mt-14 relative">
+          <div className="absolute inset-x-0 -top-6 bottom-6 bg-gray-50/50 rounded-2xl -z-10 backdrop-blur-sm"></div>
           {[1, 2, 3, 4, 5, 6, 7, 8].map((dotIndex) => (
             <button
               key={dotIndex}
@@ -419,14 +450,14 @@ const Demo = () => {
               className={`group relative flex flex-col items-center`}
               aria-label={`Go to slide ${dotIndex}`}
             >
-              <span className={`w-10 h-3 rounded-full transition-all duration-500 ${
+              <span className={`transition-all duration-500 ${
                 activeDot === dotIndex 
-                  ? 'bg-gradient-to-r from-blue-500 via-indigo-500 to-purple-600 w-14 shadow-lg shadow-indigo-500/30' 
-                  : 'bg-gray-200 hover:bg-gray-300'
+                  ? 'w-16 h-4 bg-gradient-to-r from-green-500 via-emerald-500 to-teal-600 rounded-xl shadow-lg shadow-green-500/30' 
+                  : 'w-10 h-3 bg-gray-200 hover:bg-gray-300 rounded-full hover:scale-110'
               }`}></span>
-              <span className={`absolute -bottom-7 text-sm font-medium transition-all duration-300 ${
+              <span className={`absolute -bottom-8 text-sm font-medium transition-all duration-300 ${
                 activeDot === dotIndex
-                  ? 'text-indigo-700 opacity-100 transform scale-110'
+                  ? 'text-green-700 opacity-100 font-bold transform scale-110'
                   : 'text-gray-500 opacity-0 group-hover:opacity-100'
               }`}>
                 {dotIndex}
@@ -440,10 +471,10 @@ const Demo = () => {
           ))}
         </div>
 
-        {/* Enhanced Mobile swipe indicator */}
-        <div className="mt-10 hidden sm:block">
-          <div className="flex items-center justify-center gap-4 bg-gradient-to-r from-blue-50 via-indigo-50 to-purple-50 rounded-full px-6 py-3 shadow-inner max-w-md mx-auto border border-indigo-100/50">
-            <div className="text-indigo-500 animate-pulse-slow">
+        {/* Modern Mobile swipe indicator */}
+        <div className="mt-12 hidden sm:block">
+          <div className="flex items-center justify-center gap-4 bg-gradient-to-r from-green-50 via-emerald-50 to-teal-50 rounded-2xl px-8 py-4 shadow-lg max-w-md mx-auto border border-green-100/50 backdrop-blur-sm">
+            <div className="text-green-500 animate-pulse-slow">
               <svg width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
                 <path d="M15 19L8 12L15 5" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
               </svg>
@@ -457,28 +488,28 @@ const Demo = () => {
           </div>
         </div>
 
-        {/* Enhanced Step counter */}
-        <div className="mt-10 text-center">
-          <div className="inline-flex items-center px-6 py-3 bg-gradient-to-r from-blue-500/10 to-indigo-500/10 rounded-full text-base font-medium text-gray-800 border border-indigo-200/50 shadow-lg shadow-indigo-500/5">
-            <div className="flex items-center justify-center w-8 h-8 bg-gradient-to-br from-blue-500 to-indigo-600 rounded-full text-white font-bold mr-3 shadow-md">
+        {/* Modern Step counter with enhanced styling */}
+        <div className="mt-14 text-center">
+          <div className="inline-flex items-center px-8 py-4 bg-gradient-to-r from-green-500/10 to-teal-500/10 rounded-2xl text-base font-medium text-gray-800 border border-green-200/50 shadow-xl shadow-green-500/10 backdrop-blur-sm">
+            <div className="flex items-center justify-center w-10 h-10 bg-gradient-to-br from-green-500 to-teal-600 rounded-xl text-white font-bold mr-4 shadow-lg transform rotate-3 hover:rotate-0 transition-transform">
               {currentSlide}
             </div>
-            <span>of</span>
-            <div className="flex items-center justify-center w-8 h-8 bg-gray-200 rounded-full text-gray-700 font-bold ml-3">
+            <span className="mx-2 text-green-700/70">of</span>
+            <div className="flex items-center justify-center w-10 h-10 bg-white/80 backdrop-blur-sm rounded-xl text-green-700 font-bold ml-4 border-2 border-green-200/50 shadow-md">
               8
             </div>
           </div>
         </div>
         
-        {/* Added keyboard shortcuts help */}
-        <div className="mt-6 text-center">
-          <div className="inline-flex gap-3 text-xs text-gray-500">
+        {/* Modern keyboard shortcuts help */}
+        <div className="mt-8 text-center">
+          <div className="inline-flex gap-5 text-sm text-gray-600 bg-white/50 backdrop-blur-sm px-6 py-3 rounded-xl shadow-md">
             <span className="inline-flex items-center">
-              <kbd className="px-2 py-1 bg-gray-100 border border-gray-300 rounded-md shadow-sm mr-1">←</kbd>
+              <kbd className="px-3 py-1.5 bg-gradient-to-r from-green-50 to-teal-50 border border-green-200 rounded-lg shadow-sm mr-2 font-mono">←</kbd>
               Previous
             </span>
             <span className="inline-flex items-center">
-              <kbd className="px-2 py-1 bg-gray-100 border border-gray-300 rounded-md shadow-sm mr-1">→</kbd>
+              <kbd className="px-3 py-1.5 bg-gradient-to-r from-green-50 to-teal-50 border border-green-200 rounded-lg shadow-sm mr-2 font-mono">→</kbd>
               Next
             </span>
           </div>
