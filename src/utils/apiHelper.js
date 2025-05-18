@@ -1,141 +1,94 @@
-// API Helper Functions
+// API Helper functions
 import { BACKEND_URL, endpoints, getImageUrl } from './apiConfig';
 
-// Helper function for making API requests
-export const apiRequest = async (endpoint, options = {}) => {
+// Generic fetch wrapper with error handling
+export const fetchApi = async (endpoint, options = {}) => {
   try {
-    // Set default headers if not provided
-    const headers = options.headers || {
-      'Content-Type': 'application/json',
-      'Accept': 'application/json'
-    };
-    
-    // Construct the full URL if it's a relative path
-    const url = endpoint.startsWith('http') 
-      ? endpoint 
-      : `${BACKEND_URL}${endpoint.startsWith('/') ? endpoint : `/${endpoint}`}`;
-    
-    // Make the request
+    const url = endpoint.startsWith('http') ? endpoint : `${BACKEND_URL}/${endpoint}`;
     const response = await fetch(url, {
       ...options,
-      headers
+      headers: {
+        'Content-Type': 'application/json',
+        ...options.headers,
+      },
     });
-    
-    // Parse the response
-    let data;
-    const contentType = response.headers.get('content-type');
-    if (contentType && contentType.includes('application/json')) {
-      data = await response.json();
-    } else {
-      data = await response.text();
+
+    if (!response.ok) {
+      const errorData = await response.json().catch(() => ({}));
+      throw new Error(errorData.message || `API request failed with status ${response.status}`);
     }
-    
-    // Return both the response and data
-    return { response, data, ok: response.ok };
+
+    return await response.json();
   } catch (error) {
-    console.error('API Request Error:', error);
-    return { 
-      error, 
-      ok: false, 
-      data: { error: error.message || 'Network error' } 
-    };
+    console.error('API request error:', error);
+    throw error;
   }
 };
 
-// Helper function for GET requests
-export const apiGet = (endpoint, options = {}) => {
-  return apiRequest(endpoint, { ...options, method: 'GET' });
-};
-
-// Helper function for POST requests
-export const apiPost = (endpoint, body, options = {}) => {
-  return apiRequest(endpoint, { 
-    ...options, 
+// Authentication helpers
+export const login = async (credentials) => {
+  return fetchApi(endpoints.login, {
     method: 'POST',
-    body: body instanceof FormData ? body : JSON.stringify(body)
+    body: JSON.stringify(credentials),
   });
 };
 
-// Helper function for PUT requests
-export const apiPut = (endpoint, body, options = {}) => {
-  return apiRequest(endpoint, { 
-    ...options, 
-    method: 'PUT',
-    body: body instanceof FormData ? body : JSON.stringify(body)
+export const signup = async (userData) => {
+  return fetchApi(endpoints.signup, {
+    method: 'POST',
+    body: JSON.stringify(userData),
   });
 };
 
-// Helper function for DELETE requests
-export const apiDelete = (endpoint, options = {}) => {
-  return apiRequest(endpoint, { ...options, method: 'DELETE' });
+export const verifyAuth = async (token) => {
+  return fetchApi(endpoints.verifyAuth, {
+    method: 'POST',
+    headers: {
+      Authorization: `Bearer ${token}`,
+    },
+  });
 };
 
-// Function to fix any localStorage URLs that might be using localhost
-export const fixLocalStorageUrls = () => {
-  const backendUrl = BACKEND_URL;
-  const localUrl = 'http://localhost:5000';
-  let replacements = 0;
+// Data fetching helpers
+export const getRoadEntries = async (userId = null) => {
+  const endpoint = userId 
+    ? `${endpoints.roadEntries}?userId=${userId}` 
+    : endpoints.roadEntries;
   
-  // Skip if we're actually using localhost
-  if (backendUrl === localUrl) {
-    console.log('Using localhost backend, no need to fix URLs');
-    return;
-  }
-  
-  console.log('Checking localStorage for URLs to fix...');
-  
-  // Function to replace all occurrences of a string
-  function replaceAll(str, find, replace) {
-    return str.split(find).join(replace);
-  }
-  
-  // Loop through all localStorage items
-  for (let i = 0; i < localStorage.length; i++) {
-    try {
-      const key = localStorage.key(i);
-      let value = localStorage.getItem(key);
-      
-      // Skip if the value doesn't contain localhost
-      if (!value || !value.includes(localUrl)) continue;
-      
-      // Replace localhost with backend URL
-      const newValue = replaceAll(value, localUrl, backendUrl);
-      localStorage.setItem(key, newValue);
-      
-      console.log(`Fixed localStorage item: ${key}`);
-      replacements++;
-    } catch (error) {
-      console.error('Error processing localStorage item:', error);
-    }
-  }
-  
-  console.log(`Fixed ${replacements} localStorage items.`);
-  
-  // Also check sessionStorage
-  replacements = 0;
-  for (let i = 0; i < sessionStorage.length; i++) {
-    try {
-      const key = sessionStorage.key(i);
-      let value = sessionStorage.getItem(key);
-      
-      // Skip if the value doesn't contain localhost
-      if (!value || !value.includes(localUrl)) continue;
-      
-      // Replace localhost with backend URL
-      const newValue = replaceAll(value, localUrl, backendUrl);
-      sessionStorage.setItem(key, newValue);
-      
-      console.log(`Fixed sessionStorage item: ${key}`);
-      replacements++;
-    } catch (error) {
-      console.error('Error processing sessionStorage item:', error);
-    }
-  }
-  
-  console.log(`Fixed ${replacements} sessionStorage items.`);
-  
-  return true;
+  return fetchApi(endpoint);
 };
 
-// Export all from apiConfig for convenience
-export * from './apiConfig';
+export const getReportStats = async (userId = null) => {
+  const endpoint = userId 
+    ? `${endpoints.reportStats}?userId=${userId}` 
+    : endpoints.reportStats;
+  
+  return fetchApi(endpoint);
+};
+
+// Image handling
+export const getFullImageUrl = (imagePath) => {
+  return getImageUrl(imagePath);
+};
+
+// Form submission helper
+export const submitFormData = async (endpoint, formData, options = {}) => {
+  try {
+    const url = endpoint.startsWith('http') ? endpoint : `${BACKEND_URL}/${endpoint}`;
+    const response = await fetch(url, {
+      method: 'POST',
+      body: formData,
+      ...options,
+    });
+
+    if (!response.ok) {
+      const errorData = await response.json().catch(() => ({}));
+      throw new Error(errorData.message || `Form submission failed with status ${response.status}`);
+    }
+
+    return await response.json();
+  } catch (error) {
+    console.error('Form submission error:', error);
+    throw error;
+  }
+};

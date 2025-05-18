@@ -462,96 +462,8 @@ const Dashboard = () => {
     }
   }, [userId]);
 
-  // Listen for feedback notifications from the server
-  useEffect(() => {
-    if (userId) {
-      // Set up WebSocket connection to listen for notifications
-      const socket = new WebSocket('ws://localhost:5000');
-      let reconnectAttempts = 0;
-      let reconnectTimer = null;
-      
-      const connectWebSocket = () => {
-        socket.onopen = () => {
-          console.log('WebSocket connection established');
-          // Reset reconnect attempts on successful connection
-          reconnectAttempts = 0;
-          
-          // Authenticate with userId and specify user type
-          socket.send(JSON.stringify({ 
-            type: 'authenticate', 
-            userId
-            // Removed explicit userType to let server determine it correctly
-          }));
-        };
-        
-        socket.onmessage = (event) => {
-          try {
-            const data = JSON.parse(event.data);
-            
-            // Handle authentication response
-            if (data.type === 'auth_success') {
-              console.log('WebSocket authentication successful:', data.message);
-              
-              // Removed the redirection logic to prevent redirect loops
-              // The initial page load already checks user type
-            }
-            
-            // Handle authentication error
-            if (data.type === 'auth_error') {
-              console.error('WebSocket authentication error:', data.message);
-              // Optionally redirect to login if authentication fails
-              // navigate('/');
-              return;
-            }
-            
-            // Handle feedback notifications
-            if (data.type === 'feedback_status' || data.type === 'feedback_reply') {
-              addNotification({
-                type: data.type,
-                title: data.title,
-                message: data.message,
-                details: data.details
-              });
-            }
-          } catch (error) {
-            console.error('Error processing WebSocket message:', error);
-          }
-        };
-        
-        socket.onerror = (error) => {
-          console.error('WebSocket error:', error);
-        };
-        
-        socket.onclose = (event) => {
-          console.log(`WebSocket connection closed: ${event.code} ${event.reason}`);
-          
-          // Attempt to reconnect with exponential backoff
-          if (reconnectAttempts < 5) { // Limit reconnect attempts
-            const delay = Math.min(1000 * (2 ** reconnectAttempts), 30000); // Max 30 second delay
-            console.log(`Attempting to reconnect in ${delay/1000} seconds...`);
-            
-            reconnectTimer = setTimeout(() => {
-              reconnectAttempts++;
-              connectWebSocket();
-            }, delay);
-          }
-        };
-      };
-      
-      // Initial connection
-      connectWebSocket();
-      
-      // Clean up WebSocket and timers on component unmount
-      return () => {
-        if (socket.readyState === WebSocket.OPEN || socket.readyState === WebSocket.CONNECTING) {
-          socket.close();
-        }
-        if (reconnectTimer) {
-          clearTimeout(reconnectTimer);
-        }
-      };
-    }
-  }, [userId, navigate]);
+  // WebSocket connection is now handled by Socket.IO in the effect below
+  // This comment is kept to maintain code structure
   
   // Load saved notifications from localStorage on component mount - user specific
   useEffect(() => {
@@ -1070,15 +982,15 @@ const Dashboard = () => {
         <div className="p-5">
           <p className="mb-3 font-medium">{latestNotification.message}</p>
           
-          <div className="mt-3 text-sm text-gray-600 space-y-2 bg-gray-50 p-3 rounded-lg border border-gray-100">
+          <div className="mt-3 text-sm text-gray-900 space-y-2 bg-gray-50 p-3 rounded-lg border border-gray-100">
             <div className="grid grid-cols-2 gap-2">
               <div>
-                <p className="text-xs text-gray-500">Status</p>
+                <p className="text-xs text-gray-500 font-semibold">Status</p>
                 <p className={`font-medium ${
                   latestNotification.details?.status === 'approved' ? 'text-green-600' :
                   latestNotification.details?.status === 'rejected' ? 'text-red-600' :
                   latestNotification.details?.status === 'in-progress' ? 'text-green-600' :
-                  'text-gray-700'
+                  'text-gray-900'
                 }`}>
                   {latestNotification.details?.status ? 
                     (latestNotification.details.status.charAt(0).toUpperCase() + latestNotification.details.status.slice(1)) : 
@@ -1086,7 +998,7 @@ const Dashboard = () => {
                 </p>
               </div>
               <div>
-                <p className="text-xs text-gray-500">Severity</p>
+                <p className="text-xs text-gray-500 font-semibold">Severity</p>
                 <p className={`font-medium ${
                   latestNotification.details?.severity === 'severe' ? 'text-red-600' :
                   latestNotification.details?.severity === 'high' ? 'text-orange-600' :
@@ -1102,26 +1014,26 @@ const Dashboard = () => {
             
             {latestNotification.details?.notes && (
               <div className="pt-1">
-                <p className="text-xs text-gray-500">Notes</p>
-                <p className="text-gray-700">{latestNotification.details.notes}</p>
+                <p className="text-xs text-gray-500 font-semibold">Notes</p>
+                <p className="text-gray-900">{latestNotification.details.notes}</p>
               </div>
             )}
             
             {latestNotification.details?.action && (
               <div className="pt-1">
-                <p className="text-xs text-gray-500">Recommended Action</p>
-                <p className="text-gray-700">{latestNotification.details.action}</p>
+                <p className="text-xs text-gray-500 font-semibold">Recommended Action</p>
+                <p className="text-gray-900">{latestNotification.details.action}</p>
               </div>
             )}
             
             <div className="pt-1">
-              <p className="text-xs text-gray-500">Location</p>
-              <p className="text-gray-700 truncate">{latestNotification.details?.address || 'Unknown location'}</p>
+              <p className="text-xs text-gray-500 font-semibold">Location</p>
+              <p className="text-gray-900 truncate">{latestNotification.details?.address || 'Unknown location'}</p>
             </div>
             
             <div className="pt-1">
-              <p className="text-xs text-gray-500">Review Date</p>
-              <p className="text-gray-700">{latestNotification.details?.date || new Date().toLocaleDateString()}</p>
+              <p className="text-xs text-gray-500 font-semibold">Review Date</p>
+              <p className="text-gray-900">{latestNotification.details?.date || new Date().toLocaleDateString()}</p>
             </div>
           </div>
           
@@ -1220,10 +1132,15 @@ const Dashboard = () => {
                         </div>
                         <div>
                           <h4 className="font-medium text-gray-900">{notification.title}</h4>
-                          <p className="text-sm text-gray-600 mt-1">{notification.message}</p>
-                          <p className="text-xs text-gray-500 mt-1">
+                          <p className="text-sm text-gray-900 mt-1">{notification.message}</p>
+                          <p className="text-xs text-gray-700 mt-1 font-medium">
                             {new Date(notification.timestamp).toLocaleString()}
                           </p>
+                          {notification.details?.address && (
+                            <p className="text-xs text-gray-700 mt-1">
+                              <span className="font-semibold">Location:</span> {notification.details.address}
+                            </p>
+                          )}
                         </div>
                       </div>
                       {!notification.read && (

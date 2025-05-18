@@ -50,6 +50,7 @@ const App = () => {
   
   return (
     <Router>
+      <div className="bg-white text-gray-900">
       <Navbar />
       <Routes>
         <Route path="/" element={<HomePage />} />
@@ -73,6 +74,7 @@ const App = () => {
         autoClose={5000}
         theme="colored" 
       />
+      </div>
     </Router>
   );
 };

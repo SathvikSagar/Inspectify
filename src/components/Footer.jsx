@@ -9,12 +9,9 @@ const Footer = () => {
         <div className="grid grid-cols-1 md:grid-cols-4 gap-8">
           {/* Company Info */}
           <div className="md:col-span-1">
-            <div className="mb-4 flex items-center">
-              <img src="/logo.png" alt="Inspectify Logo" className="w-8 h-8 mr-2" />
-              <div>
-                <h2 className="text-xl font-bold text-gray-900 mb-1">Inspectify</h2>
-                <p className="text-green-600 text-sm font-medium">AI Road Damage Detection</p>
-              </div>
+            <div className="mb-4">
+              <h2 className="text-xl font-bold text-gray-900 mb-1">Inspectify</h2>
+              <p className="text-green-600 text-sm font-medium">AI Road Damage Detection</p>
             </div>
             <p className="text-gray-600 text-sm mb-4">
               Automated road inspection technology powered by artificial intelligence.
@@ -83,7 +80,7 @@ const Footer = () => {
               </a>
             </div>
             <p className="text-sm text-gray-500">
-              Email: info@roadinspect.ai
+              Email: info@Inspectify.ai
             </p>
           </div>
         </div>
@@ -93,7 +90,7 @@ const Footer = () => {
       <div className="bg-gray-50 py-4 border-t border-gray-200">
         <div className="max-w-7xl mx-auto px-6 flex justify-center md:justify-between items-center">
           <div className="text-gray-500 text-sm">
-            © {new Date().getFullYear()} RoadInspect AI. All rights reserved.
+            © {new Date().getFullYear()} Inspectify AI. All rights reserved.
           </div>
           
           <div className="hidden md:block text-xs text-gray-400">

@@ -14,7 +14,6 @@ const Camera = () => {
           (device) => device.kind === "videoinput"
         );
         setDevices(videoDevices);
-
         // Set default selected device
         if (videoDevices.length > 0) {
           setSelectedDeviceId(videoDevices[0].deviceId);

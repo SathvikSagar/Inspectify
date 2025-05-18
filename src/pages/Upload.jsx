@@ -135,6 +135,9 @@ const Upload = () => {
     
     // Show immediate feedback to user
     setNotification("Starting image analysis... This may take a few seconds.");
+    
+    // Define progressInterval at the function level so it's accessible in catch/finally blocks
+    let progressInterval;
 
     try {
       // Start timer to measure performance
@@ -165,7 +168,7 @@ const Upload = () => {
       
       // Set up a progress indicator
       let progressCounter = 0;
-      const progressInterval = setInterval(() => {
+      progressInterval = setInterval(() => {
         progressCounter += 5;
         if (progressCounter <= 100) {
           setNotification(`Processing image... ${progressCounter}% complete. Please wait.`);
@@ -271,14 +274,18 @@ const Upload = () => {
       if (canvasRef.current && result.detections && result.detections.length > 0) {
         try {
           // Make sure bounding boxes are drawn and wait for completion
-          await drawBoundingBoxes();
+          const success = await drawBoundingBoxes();
           
-          // Add a small delay to ensure rendering is complete
-          await new Promise(resolve => setTimeout(resolve, 100));
-          
-          // Convert canvas to base64 with reduced quality to decrease payload size
-          boundingBoxImage = canvasRef.current.toDataURL('image/jpeg', 0.7);
-          console.log("Bounding box image captured from canvas successfully");
+          if (success) {
+            // Add a small delay to ensure rendering is complete
+            await new Promise(resolve => setTimeout(resolve, 100));
+            
+            // Convert canvas to base64 with reduced quality to decrease payload size
+            boundingBoxImage = canvasRef.current.toDataURL('image/jpeg', 0.7);
+            console.log("Bounding box image captured from canvas successfully");
+          } else {
+            console.warn("Bounding boxes were not drawn successfully, skipping canvas capture");
+          }
         } catch (e) {
           console.error("Error capturing canvas image:", e);
         }
@@ -388,9 +395,16 @@ const Upload = () => {
       const ctx = canvas.getContext('2d');
       const img = new Image();
       img.crossOrigin = 'anonymous';
-      img.src = previewUrl;
-
+      
+      // Set a timeout to handle cases where the image might hang
+      const timeoutId = setTimeout(() => {
+        console.warn("Image loading timeout for bounding boxes");
+        resolve(false);
+      }, 5000); // 5 second timeout
+      
+      // Set up event handlers before setting src
       img.onload = () => {
+        clearTimeout(timeoutId);
         try {
           // Set canvas dimensions to match the image
           canvas.width = img.width;
@@ -412,7 +426,8 @@ const Upload = () => {
             // Add label if class name is available
             if (className) {
               ctx.fillStyle = 'rgba(0, 0, 0, 0.7)';
-              ctx.fillRect(x, y - 20, ctx.measureText(className).width + 10, 20);
+              const textWidth = ctx.measureText(className).width;
+              ctx.fillRect(x, y - 20, textWidth + 10, 20);
               ctx.fillStyle = 'white';
               ctx.font = '14px Arial';
               ctx.fillText(className, x + 5, y - 5);
@@ -423,30 +438,45 @@ const Upload = () => {
           resolve(true);
         } catch (err) {
           console.error("Error drawing bounding boxes:", err);
-          reject(err);
+          resolve(false); // Resolve with false instead of rejecting
         }
       };
 
       img.onerror = (err) => {
+        clearTimeout(timeoutId);
         console.error("Error loading image for bounding boxes:", err);
-        reject(err);
+        resolve(false); // Resolve with false instead of rejecting
       };
+      
+      // Set the src after setting up all handlers
+      img.src = previewUrl;
     });
   };
 
   useEffect(() => {
+    let isMounted = true;
+    
     if (analysisResult && previewUrl) {
       // Draw bounding boxes when analysis result or preview URL changes
       drawBoundingBoxes()
         .then(success => {
-          if (success) {
-            console.log("Bounding boxes drawn successfully in useEffect");
+          if (isMounted) {
+            if (success) {
+              console.log("Bounding boxes drawn successfully in useEffect");
+            }
           }
         })
         .catch(err => {
-          console.error("Error drawing bounding boxes in useEffect:", err);
+          if (isMounted) {
+            console.error("Error drawing bounding boxes in useEffect:", err);
+          }
         });
     }
+    
+    // Cleanup function to prevent state updates on unmounted component
+    return () => {
+      isMounted = false;
+    };
   }, [analysisResult, previewUrl]);
 
   const getMarkerColor = (severity) => {

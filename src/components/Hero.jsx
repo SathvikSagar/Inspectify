@@ -11,7 +11,7 @@ const Hero = () => {
 
   return (
     <section
-      className="py-20 px-6 md:px-12 lg:px-24 flex flex-col md:flex-row items-center justify-between"
+      className="py-20 px-6 md:px-12 lg:px-24 flex flex-col md:flex-row items-center justify-between bg-white"
       style={{ fontFamily: "'Rethink Sans', sans-serif" }}
     >
       {/* Left Side - Text */}

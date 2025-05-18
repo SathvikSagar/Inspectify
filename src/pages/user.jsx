@@ -1,11 +1,34 @@
 import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import Dashboard from "../components/Dashboard";
+import Sidebar from "../components/Sidebar";
 
 const User = () => {
   const [username, setUsername] = useState("");
+  const [userId, setUserId] = useState("");
   const [loading, setLoading] = useState(true);
+  const [sidebarOpen, setSidebarOpen] = useState(true);
   const navigate = useNavigate();
+  
+  // Effect to check if we're on mobile and update sidebar state accordingly
+  useEffect(() => {
+    const checkIfMobile = () => {
+      if (window.innerWidth < 768) {
+        setSidebarOpen(false);
+      } else {
+        setSidebarOpen(true);
+      }
+    };
+    
+    // Check on initial load
+    checkIfMobile();
+    
+    // Add event listener for window resize
+    window.addEventListener('resize', checkIfMobile);
+    
+    // Clean up
+    return () => window.removeEventListener('resize', checkIfMobile);
+  }, []);
 
   useEffect(() => {
     // Check authentication and user type

@@ -338,28 +338,24 @@ const Contact = () => {
                 <div className="space-y-6">
                     {[
                         {
-                            question: "1. What is SafeStreet and how does it work?",
-                            answer: "SafeStreet is an AI-powered web app that detects road damages (like potholes or cracks) from uploaded or captured images. It automatically identifies the type and severity of the damage, tags the location, and stores the result for reporting and review."
+                            question: " How do I upload or capture an image for damage detection?",
+                            answer: "You can either upload a road image from your device or capture one directly using your webcam in the \"Camera\" tab. Make sure the image clearly shows the road surface for accurate predictions."
                         },
                         {
-                            question: "2. How do I upload or capture an image for analysis?",
-                            answer: "Go to the Camera tab in the app. You can either capture a photo using your device's camera or upload an existing image. Once submitted, the system will analyze the image and provide a prediction along with location data."
+                            question: " What kind of damage can the system detect?",
+                            answer: "Our AI model can detect and classify the following types of road damage: Longitudinal Crack, Lateral Crack, Alligator Crack, Pothole."
                         },
                         {
-                            question: "3. What types of road damage does SafeStreet detect?",
-                            answer: "Currently, SafeStreet can identify the following common road damages: Potholes, Longitudinal cracks, Lateral cracks, Alligator cracks. More damage types may be added in future updates."
+                            question: " How does the app detect my location? Is it safe?",
+                            answer: "When you upload or capture an image, the app fetches your current location using your browser's GPS (with your permission). This data is securely stored with your image and helps authorities locate damage spots."
                         },
                         {
-                            question: "4. How does SafeStreet determine the location of the damage?",
-                            answer: "When you capture or upload an image, SafeStreet uses your device's GPS (with your permission) to automatically tag the location. This ensures accurate geo-reporting for maintenance or municipal review."
+                            question: " Where can I see my previous uploads and results?",
+                            answer: "You can view all your past uploads along with predictions, location, and timestamps in the \"History\" or \"Saved\" tab of the dashboard."
                         },
                         {
-                            question: "5. Are my images and data stored securely?",
-                            answer: "Yes. Only images identified as damaged roads are saved, along with timestamp and location. Your data is securely stored in our backend system (MongoDB) and is not shared with third parties."
-                        },
-                        {
-                            question: "6. Can I view past reports or saved results?",
-                            answer: "Yes, visit the History or Saved tab to view all your previously submitted road damage reports, including images, predicted damage type, location, and date/time of upload."
+                            question: " Is my data private and secure?",
+                            answer: "Yes. Your uploaded images, location data, and personal information (if any) are stored securely in our database. We do not share your data with third parties."
                         }
                     ].map((faq, index) => (
                         <motion.div 

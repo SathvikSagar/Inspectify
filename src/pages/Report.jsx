@@ -762,7 +762,7 @@ const Report = () => {
           <p className="text-gray-600 text-center">{error}</p>
           <button 
             onClick={() => window.location.reload()}
-            className="mt-6 w-full bg-blue-500 hover:bg-blue-600 text-white font-medium py-2 px-4 rounded-lg transition-colors"
+            className="mt-6 w-full bg-blue-500 hover:bg-blue-600 text-black font-medium py-2 px-4 rounded-lg transition-colors"
           >
             Retry
           </button>
@@ -1047,7 +1047,7 @@ const Report = () => {
               </h3>
               <button 
                 onClick={() => setShowReviewModal(false)}
-                className="text-gray-400 hover:text-gray-500 transition-colors"
+                className="text-gray-400 hover:text-black-500 transition-colors"
               >
                 <X className="h-5 w-5" />
               </button>
@@ -1076,7 +1076,7 @@ const Report = () => {
                   )}
                   
                   {/* Overlay with image info */}
-                  <div className="absolute bottom-0 left-0 right-0 bg-gradient-to-t from-black/70 to-transparent p-3 text-white">
+                  <div className="absolute bottom-0 left-0 right-0 bg-gradient-to-t from-black/70 to-transparent p-3 text-black">
                     <p className="text-sm font-medium">ID: {entry._id?.substring(0, 8) || 'N/A'}</p>
                   </div>
                 </div>
@@ -1085,8 +1085,8 @@ const Report = () => {
                   <div className="bg-gray-50 p-3 rounded-lg flex items-start">
                     <MapPin className="h-5 w-5 text-blue-500 mt-0.5 flex-shrink-0" />
                     <div className="ml-2">
-                      <p className="text-sm font-medium text-gray-700">Location</p>
-                      <p className="text-sm text-gray-600">{entry.address || 'Address not available'}</p>
+                      <p className="text-sm font-medium text-gray-900">Location</p>
+                      <p className="text-sm text-gray-800">{entry.address || 'Address not available'}</p>
                     </div>
                   </div>
                   
@@ -1095,16 +1095,16 @@ const Report = () => {
                       <path fillRule="evenodd" d="M5.05 4.05a7 7 0 119.9 9.9L10 18.9l-4.95-4.95a7 7 0 010-9.9zM10 11a2 2 0 100-4 2 2 0 000 4z" clipRule="evenodd" />
                     </svg>
                     <div className="ml-2">
-                      <p className="text-sm font-medium text-gray-700">Coordinates</p>
-                      <p className="text-sm text-gray-600 font-mono">{entry.latitude || 'N/A'}, {entry.longitude || 'N/A'}</p>
+                      <p className="text-sm font-medium text-gray-900">Coordinates</p>
+                      <p className="text-sm text-gray-800 font-mono">{entry.latitude || 'N/A'}, {entry.longitude || 'N/A'}</p>
                     </div>
                   </div>
                   
                   <div className="bg-gray-50 p-3 rounded-lg flex items-start">
                     <Calendar className="h-5 w-5 text-blue-500 mt-0.5 flex-shrink-0" />
                     <div className="ml-2">
-                      <p className="text-sm font-medium text-gray-700">Detected</p>
-                      <p className="text-sm text-gray-600">{new Date(entry.timestamp).toLocaleString()}</p>
+                      <p className="text-sm font-medium text-gray-900">Detected</p>
+                      <p className="text-sm text-gray-800">{new Date(entry.timestamp).toLocaleString()}</p>
                     </div>
                   </div>
                 </div>
@@ -1112,17 +1112,17 @@ const Report = () => {
               
               <div className="md:w-1/2 space-y-5">
                 <div className="bg-blue-50 p-4 rounded-lg mb-4">
-                  <h4 className="text-sm font-semibold text-blue-800 mb-2 flex items-center">
-                    <CheckCircle className="h-4 w-4 mr-1" />
+                  <h4 className="text-sm font-semibold text-gray-900 mb-2 flex items-center">
+                    <CheckCircle className="h-4 w-4 mr-1 text-blue-600" />
                     Review Information
                   </h4>
-                  <p className="text-xs text-blue-700">
+                  <p className="text-sm text-gray-800 font-medium">
                     Please review this road issue and provide your assessment. This information will be used to prioritize repairs.
                   </p>
                 </div>
                 
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1 flex items-center">
+                  <label className="block text-sm font-medium text-gray-900 mb-1 flex items-center">
                     <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4 mr-1 text-blue-500" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
                     </svg>
@@ -1131,7 +1131,7 @@ const Report = () => {
                   <select
                     value={reviewForm.status}
                     onChange={(e) => setReviewForm({...reviewForm, status: e.target.value})}
-                    className="w-full rounded-lg border border-gray-300 py-2.5 px-3 bg-white focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 shadow-sm"
+                    className="w-full rounded-lg border border-gray-300 py-2.5 px-3 bg-white text-gray-900 font-medium focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 shadow-sm"
                   >
                     <option value="approved">Approved - Issue Confirmed</option>
                     <option value="rejected">Rejected - Not a Valid Issue</option>
@@ -1141,7 +1141,7 @@ const Report = () => {
                 </div>
                 
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1 flex items-center">
+                  <label className="block text-sm font-medium text-gray-900 mb-1 flex items-center">
                     <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4 mr-1 text-blue-500" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 20l-5.447-2.724A1 1 0 013 16.382V5.618a1 1 0 011.447-.894L9 7m0 13l6-3m-6 3V7m6 10l4.553 2.276A1 1 0 0021 18.382V7.618a1 1 0 00-.553-.894L15 4m0 13V4m0 0L9 7" />
                     </svg>
@@ -1231,14 +1231,14 @@ const Report = () => {
                           </span>
                         </div>
                         <div>
-                          <span className="font-medium text-gray-700">Processing:</span>
-                          <span className="ml-1 text-gray-600">
+                          <span className="font-medium text-gray-900">Processing:</span>
+                          <span className="ml-1 text-gray-800">
                             {entry.analysisResult.processing_time || entry.analysisResult.clientProcessingTime || 'N/A'} sec
                           </span>
                         </div>
                         <div>
-                          <span className="font-medium text-gray-700">Model:</span>
-                          <span className="ml-1 text-gray-600">YOLOv8</span>
+                          <span className="font-medium text-gray-900">Model:</span>
+                          <span className="ml-1 text-gray-800">YOLOv8</span>
                         </div>
                       </div>
                     </div>
@@ -1246,7 +1246,7 @@ const Report = () => {
                 )}
                 
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1 flex items-center">
+                  <label className="block text-sm font-medium text-gray-900 mb-1 flex items-center">
                     <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4 mr-1 text-blue-500" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
                     </svg>
@@ -1274,7 +1274,7 @@ const Report = () => {
                 </div>
                 
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1 flex items-center">
+                  <label className="block text-sm font-medium text-gray-900 mb-1 flex items-center">
                     <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4 mr-1 text-blue-500" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M7 11.5V14m0-2.5v-6a1.5 1.5 0 113 0m-3 6a1.5 1.5 0 00-3 0v2a7.5 7.5 0 0015 0v-5a1.5 1.5 0 00-3 0m-6-3V11m0-5.5v-1a1.5 1.5 0 013 0v1m0 0V11m0-5.5a1.5 1.5 0 013 0v3m0 0V11" />
                     </svg>
@@ -1291,7 +1291,7 @@ const Report = () => {
                           recommendedAction: newValue
                         }));
                       }}
-                      className="w-full rounded-lg border border-gray-300 py-2.5 px-3 pl-9 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 shadow-sm"
+                      className="w-full rounded-lg border border-gray-300 py-2.5 px-3 pl-9 text-gray-900 font-medium focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 shadow-sm"
                       placeholder="e.g., Patch pothole, Resurface road section"
                     />
                     <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
@@ -1341,7 +1341,7 @@ const Report = () => {
                 </div>
                 
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1 flex items-center">
+                  <label className="block text-sm font-medium text-gray-900 mb-1 flex items-center">
                     <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4 mr-1 text-blue-500" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
                     </svg>
@@ -1368,7 +1368,7 @@ const Report = () => {
                       }}
                       rows={4}
                       placeholder="Add any additional notes about this road issue..."
-                      className="w-full rounded-lg border border-gray-300 py-2.5 px-3 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 shadow-sm"
+                      className="w-full rounded-lg border border-gray-300 py-2.5 px-3 text-gray-900 font-medium focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 shadow-sm"
                       id="review-notes"
                       name="review-notes"
                       style={{ resize: 'vertical', minHeight: '100px' }}
@@ -1429,7 +1429,7 @@ const Report = () => {
               onClick={handleReviewSubmit}
               className="px-4 py-2.5 bg-gradient-to-r from-green-600 to-green-700 hover:from-green-700 hover:to-green-800 rounded-lg text-white font-medium shadow-sm hover:shadow transition-all flex items-center justify-center"
             >
-              <CheckCircle className="h-4 w-4 mr-2" />
+              <CheckCircle className="h-4 w-4 mr-2 text-white" />
               Submit Review & Notify
             </button>
           </div>
@@ -1606,8 +1606,8 @@ const Report = () => {
                         <div className="flex items-start bg-gray-50 p-2 rounded-lg">
                           <MapPin className="h-5 w-5 text-blue-500 mt-0.5 flex-shrink-0" />
                           <div className="ml-2">
-                            <p className="text-sm font-medium text-gray-700">Location</p>
-                            <p className="text-sm text-gray-600 break-words">{entry.address || 'Address not available'}</p>
+                            <p className="text-sm font-medium text-gray-900">Location</p>
+                            <p className="text-sm text-gray-800 break-words">{entry.address || 'Address not available'}</p>
                           </div>
                         </div>
                   
@@ -1616,8 +1616,8 @@ const Report = () => {
                             <path fillRule="evenodd" d="M5.05 4.05a7 7 0 119.9 9.9L10 18.9l-4.95-4.95a7 7 0 010-9.9zM10 11a2 2 0 100-4 2 2 0 000 4z" clipRule="evenodd" />
                           </svg>
                           <div className="ml-2">
-                            <p className="text-sm font-medium text-gray-700">Coordinates</p>
-                            <p className="text-sm text-gray-600 font-mono">
+                            <p className="text-sm font-medium text-gray-900">Coordinates</p>
+                            <p className="text-sm text-gray-800 font-mono">
                               {entry.latitude || 'N/A'}, {entry.longitude || 'N/A'}
                             </p>
                           </div>
@@ -1766,7 +1766,7 @@ const Report = () => {
                         </>
                       ) : (
                         <>
-                          <Download className="h-4 w-4 mr-2" />
+                          <Download className="h-4 w-4 mr-2 text-white" />
                           Download Report
                         </>
                       )}
@@ -1776,7 +1776,7 @@ const Report = () => {
                       onClick={() => handleViewOnMap(entry)}
                       className="flex-1 flex items-center justify-center px-4 py-2.5 rounded-lg font-medium bg-gradient-to-r from-indigo-600 to-indigo-700 hover:from-indigo-700 hover:to-indigo-800 text-white transition-all shadow-sm hover:shadow"
                     >
-                      <Map className="h-4 w-4 mr-2" />
+                      <Map className="h-4 w-4 mr-2 text-white" />
                       View on Map
                     </button>
                   </div>
@@ -1788,7 +1788,7 @@ const Report = () => {
                     }}
                     className="w-full flex items-center justify-center px-4 py-2.5 rounded-lg font-medium bg-gradient-to-r from-green-600 to-green-700 hover:from-green-700 hover:to-green-800 text-white transition-all shadow-sm hover:shadow"
                   >
-                    <Bell className="h-4 w-4 mr-2" />
+                    <Bell className="h-4 w-4 mr-2 text-white" />
                     Review & Notify
                   </button>
                 </div>
@@ -1837,7 +1837,7 @@ const Report = () => {
           </pre>
           <button 
             onClick={() => window.location.reload()}
-            className="mt-6 w-full bg-blue-500 hover:bg-blue-600 text-white font-medium py-2 px-4 rounded-lg transition-colors"
+            className="mt-6 w-full bg-blue-500 hover:bg-blue-600 text-black font-medium py-2 px-4 rounded-lg transition-colors"
           >
             Refresh Page
           </button>

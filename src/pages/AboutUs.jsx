@@ -238,7 +238,7 @@ export default function AboutUs() {
                     Start now !
                   </button>
                 </Link>
-                <Link to="/contact" className="block">
+                <Link to="/demo" className="block">
                   <button className="w-full bg-white border border-gray-300 text-gray-700 hover:text-green-700 hover:border-green-300 px-6 py-3 rounded-xl font-semibold transition-all">
                     Start a Demo
                   </button>

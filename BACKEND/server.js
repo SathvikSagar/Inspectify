@@ -29,21 +29,59 @@ const server = http.createServer(app);
 const io = new Server(server, {
   cors: { 
     origin: "*", 
-    methods: ["GET", "POST"],
-    credentials: true
+    methods: ["GET", "POST", "OPTIONS"],
+    credentials: true,
+    allowedHeaders: ["*"]
   },
-  transports: ['websocket', 'polling'],
+  transports: ['polling', 'websocket'],  // Try polling first, then websocket
   pingTimeout: 60000,
-  pingInterval: 25000
+  pingInterval: 25000,
+  allowEIO3: true  // Allow Engine.IO 3 compatibility
 });
 
-app.use(cors());
+// Configure CORS for Express
+app.use(cors({
+  origin: '*',
+  methods: ['GET', 'POST', 'OPTIONS'],
+  credentials: true,
+  allowedHeaders: ['Content-Type', 'Authorization', 'X-Requested-With']
+}));
+
+// Add CORS headers to all responses
+app.use((req, res, next) => {
+  res.header('Access-Control-Allow-Origin', '*');
+  res.header('Access-Control-Allow-Methods', 'GET, POST, OPTIONS');
+  res.header('Access-Control-Allow-Headers', 'Content-Type, Authorization, X-Requested-With');
+  res.header('Access-Control-Allow-Credentials', 'true');
+  
+  // Handle preflight requests
+  if (req.method === 'OPTIONS') {
+    return res.status(200).end();
+  }
+  
+  next();
+});
 // Increase JSON payload limit to handle large base64 images
 app.use(express.json({ limit: '50mb' }));
 // Increase URL-encoded payload limit as well
 app.use(express.urlencoded({ limit: '50mb', extended: true }));
 app.use("/uploads", express.static(UPLOADS_DIR));
 app.use("/final", express.static(FINAL_DIR));
+
+// Add a health check endpoint
+app.get('/health', (req, res) => {
+  res.status(200).json({ 
+    status: 'ok', 
+    timestamp: new Date().toISOString(),
+    socketio: 'enabled',
+    version: '1.0.0'
+  });
+});
+
+// Serve the socket test page
+app.get('/socket-test', (req, res) => {
+  res.sendFile(path.join(__dirname, 'socket_test.html'));
+});
 
 // Create necessary directories
 [UPLOADS_DIR, FINAL_DIR].forEach((dir) => {
@@ -261,6 +299,16 @@ io.on("connection", (socket) => {
     }
   });
   
+  // Handle ping for testing
+  socket.on("ping", (data) => {
+    console.log(`Received ping from ${socket.id}:`, data);
+    socket.emit("pong", { 
+      time: new Date().toISOString(),
+      received: data,
+      message: "Server received your ping!"
+    });
+  });
+
   // Handle errors
   socket.on("error", (error) => {
     console.error(`Socket ${socket.id} error:`, error);
@@ -439,131 +487,159 @@ app.post("/analyze-damage", upload.single("image"), async (req, res) => {
     const finalFilename = `analyze_${originalName}_${timestamp}.jpg`;
     const finalImagePath = path.join("uploads", finalFilename);
 
-    // Optimize image before saving to reduce processing time
-    try {
-      const sharp = require('sharp');
-      // Process image with sharp for faster I/O and optimized size
-      await sharp(req.file.buffer)
-        .resize(800, 800, { fit: 'inside' }) // Resize large images for faster processing
-        .jpeg({ quality: 80, progressive: true })  // Reduced quality for faster processing
-        .toFile(path.join(__dirname, finalImagePath));
-    } catch (e) {
-      // Fall back to standard file writing if sharp is not available
-      await fs.promises.writeFile(path.join(__dirname, finalImagePath), req.file.buffer);
+    // Original method
+    console.log("Using original detection method");
+    
+    // Original method as fallback
+    function useOriginalMethod() {
+      // Optimize image before saving to reduce processing time
+      try {
+        const sharp = require('sharp');
+        // Process image with sharp for faster I/O and optimized size
+        sharp(req.file.buffer)
+          .resize(800, 800, { fit: 'inside' }) // Resize large images for faster processing
+          .jpeg({ quality: 80, progressive: true })  // Reduced quality for faster processing
+          .toFile(path.join(__dirname, finalImagePath))
+          .then(() => {
+            // Continue with Python process after image is saved
+            runPythonProcess();
+          })
+          .catch(err => {
+            // Fall back to standard file writing if sharp fails
+            fs.promises.writeFile(path.join(__dirname, finalImagePath), req.file.buffer)
+              .then(runPythonProcess)
+              .catch(err => {
+                if (!responseSent) {
+                  res.status(500).json({ error: "Failed to save image" });
+                  responseSent = true;
+                }
+              });
+          });
+      } catch (e) {
+        // Fall back to standard file writing if sharp is not available
+        fs.promises.writeFile(path.join(__dirname, finalImagePath), req.file.buffer)
+          .then(runPythonProcess)
+          .catch(err => {
+            if (!responseSent) {
+              res.status(500).json({ error: "Failed to save image" });
+              responseSent = true;
+            }
+          });
+      }
     }
     
-    // Use the original detection script with optimizations
-    const pythonProcess = spawn("python", [
-      "models/detect.py", 
-      finalImagePath,
-      req.body.latitude || "",
-      req.body.longitude || ""
-    ], {
-      // Set higher process priority
-      windowsHide: true,
-      // Optimize environment variables
-      env: {
-        ...process.env,
-        PYTHONUNBUFFERED: "1", // Disable buffering for faster output
-        OMP_NUM_THREADS: "4",  // Optimize OpenMP threads
-        MKL_NUM_THREADS: "4"   // Optimize MKL threads
-      }
-    });
-
-    // Set timeout to prevent hanging
-    const timeout = setTimeout(() => {
-      if (!responseSent) {
-        try {
-          pythonProcess.kill();
-          console.error("Python process timed out after 60 seconds");
-          res.status(500).json({ error: "Analysis timed out. Please try again with a smaller image." });
-          responseSent = true;
-        } catch (e) {
-          console.error("Error killing Python process:", e);
+    // Function to run the Python process
+    function runPythonProcess() {
+      // Use the original detection script with optimizations
+      const pythonProcess = spawn("python", [
+        "models/detect.py", 
+        finalImagePath,
+        req.body.latitude || "",
+        req.body.longitude || ""
+      ], {
+        // Set higher process priority
+        windowsHide: true,
+        // Optimize environment variables
+        env: {
+          ...process.env,
+          PYTHONUNBUFFERED: "1", // Disable buffering for faster output
+          OMP_NUM_THREADS: "4",  // Optimize OpenMP threads
+          MKL_NUM_THREADS: "4"   // Optimize MKL threads
         }
-      }
-    }, 60000); // 60 second timeout
+      });
 
-    // Use more efficient data collection
-    const chunks = [];
-    const errorChunks = [];
-    
-    pythonProcess.stdout.on("data", (data) => {
-      chunks.push(data);
-    });
-    
-    pythonProcess.stderr.on("data", (data) => {
-      errorChunks.push(data);
-      console.error("Python error:", data.toString());
-    });
-
-    pythonProcess.on("close", (code) => {
-      clearTimeout(timeout);
-      console.timeEnd("analyze-damage");
-      
-      // Don't send response if already sent
-      if (responseSent) return;
-      
-      if (code !== 0) {
-        console.error(`Python process exited with code ${code}`);
-        res.status(500).json({ 
-          error: "Analysis process failed", 
-          details: Buffer.concat(errorChunks).toString() || "Unknown error"
-        });
-        responseSent = true;
-        return;
-      }
-      
-      try {
-        // Combine chunks more efficiently
-        const resultData = Buffer.concat(chunks).toString();
-        
-        // Find the JSON part of the output (in case there's debug info)
-        const jsonMatch = resultData.match(/\{[\s\S]*\}/);
-        const jsonStr = jsonMatch ? jsonMatch[0] : resultData;
-        const parsed = JSON.parse(jsonStr);
-        
-        // Add server processing time
-        parsed.server_processing_time = new Date().toISOString();
-        
-        // Send response with compression if supported
-        res.status(200).json(parsed);
-        responseSent = true;
-        
-        // Emit socket event for real-time updates to admins only (in background)
-        setImmediate(() => {
-          // Send to admins only
-          for (const [connectedUserId, socketId] of userSockets.entries()) {
-            if (connectedUserId.startsWith('admin_')) {
-              io.to(socketId).emit("analysis-complete", {
-                message: "Image analysis completed",
-                severity: parsed.severity?.level || "Unknown",
-                timestamp: new Date()
-              });
-            }
-          }
-        });
-      } catch (err) {
-        console.error("JSON parse error:", err);
+      // Set timeout to prevent hanging
+      const timeout = setTimeout(() => {
         if (!responseSent) {
-          res.status(500).json({ error: "Error parsing detection result" });
-          responseSent = true;
+          try {
+            pythonProcess.kill();
+            console.error("Python process timed out after 60 seconds");
+            res.status(500).json({ error: "Analysis timed out. Please try again with a smaller image." });
+            responseSent = true;
+          } catch (e) {
+            console.error("Error killing Python process:", e);
+          }
         }
-      }
-    });
+      }, 60000); // 60 second timeout
+
+      // Use more efficient data collection
+      const chunks = [];
+      const errorChunks = [];
+      
+      pythonProcess.stdout.on("data", (data) => {
+        chunks.push(data);
+      });
+      
+      pythonProcess.stderr.on("data", (data) => {
+        errorChunks.push(data);
+        console.error("Python error:", data.toString());
+      });
+
+      pythonProcess.on("close", (code) => {
+        clearTimeout(timeout);
+        console.timeEnd("analyze-damage");
+        
+        // Don't send response if already sent
+        if (responseSent) return;
+        
+        if (code !== 0) {
+          console.error(`Python process exited with code ${code}`);
+          res.status(500).json({ 
+            error: "Analysis process failed", 
+            details: Buffer.concat(errorChunks).toString() || "Unknown error"
+          });
+          responseSent = true;
+          return;
+        }
+        
+        try {
+          // Combine chunks more efficiently
+          const resultData = Buffer.concat(chunks).toString();
+          
+          // Find the JSON part of the output (in case there's debug info)
+          const jsonMatch = resultData.match(/\{[\s\S]*\}/);
+          const jsonStr = jsonMatch ? jsonMatch[0] : resultData;
+          const parsed = JSON.parse(jsonStr);
+          
+          // Add server processing time
+          parsed.server_processing_time = new Date().toISOString();
+          
+          // Send response with compression if supported
+          res.status(200).json(parsed);
+          responseSent = true;
+          
+          // Emit socket event for real-time updates to admins only (in background)
+          setImmediate(() => {
+            // Send to admins only
+            for (const [connectedUserId, socketId] of userSockets.entries()) {
+              if (connectedUserId.startsWith('admin_')) {
+                io.to(socketId).emit("analysis-complete", {
+                  message: "Image analysis completed",
+                  severity: parsed.severity?.level || "Unknown",
+                  timestamp: new Date()
+                });
+              }
+            }
+          });
+        } catch (e) {
+          console.error("Error parsing Python output:", e);
+          if (!responseSent) {
+            res.status(500).json({ error: "Failed to parse analysis results" });
+            responseSent = true;
+          }
+        }
+      });
+    }
     
-    // Handle unexpected errors
-    pythonProcess.on("error", (err) => {
-      console.error("Python process error:", err);
-      if (!responseSent) {
-        res.status(500).json({ error: "Python process error" });
-        responseSent = true;
-      }
-    });
-    
+    // If we haven't started the original method yet, do it now
+    if (!responseSent) {
+      useOriginalMethod();
+    }
   } catch (error) {
     console.error("Analyze Damage Error:", error);
-    res.status(500).json({ error: "Server error" });
+    if (!responseSent) {
+      res.status(500).json({ error: "Server error" });
+    }
   }
 });
 
@@ -1636,6 +1712,63 @@ app.get("/api/report-stats", async (req, res) => {
   } catch (error) {
     console.error("Error fetching report stats:", error);
     res.status(500).json({ error: "Server error. Could not fetch stats." });
+  }
+});
+
+// --- /api/road-stats ---
+app.get("/api/road-stats", async (req, res) => {
+  try {
+    const { userId } = req.query;
+    
+    // Get all road data
+    const query = userId ? { userId } : {};
+    const roadEntryData = await RoadEntry.find(query).sort({ timestamp: -1 });
+    
+    // Calculate review status distribution
+    const reviewStatusDistribution = {
+      pending: roadEntryData.filter(item => item.reviewStatus === 'pending').length,
+      approved: roadEntryData.filter(item => item.reviewStatus === 'approved').length,
+      rejected: roadEntryData.filter(item => item.reviewStatus === 'rejected').length,
+      inProgress: roadEntryData.filter(item => item.reviewStatus === 'in-progress').length
+    };
+    
+    // Calculate severity distribution
+    const severityDistribution = {
+      low: roadEntryData.filter(item => item.severity === 'low').length,
+      moderate: roadEntryData.filter(item => item.severity === 'moderate').length,
+      high: roadEntryData.filter(item => item.severity === 'high').length,
+      severe: roadEntryData.filter(item => item.severity === 'severe').length,
+      unknown: roadEntryData.filter(item => item.severity === 'unknown').length
+    };
+    
+    // Calculate damage type distribution
+    const damageTypeDistribution = {};
+    roadEntryData.forEach(entry => {
+      if (Array.isArray(entry.damageType)) {
+        entry.damageType.forEach(type => {
+          damageTypeDistribution[type] = (damageTypeDistribution[type] || 0) + 1;
+        });
+      } else if (entry.damageType) {
+        damageTypeDistribution[entry.damageType] = (damageTypeDistribution[entry.damageType] || 0) + 1;
+      }
+    });
+    
+    // Get recent entries (last 7 days)
+    const oneWeekAgo = new Date();
+    oneWeekAgo.setDate(oneWeekAgo.getDate() - 7);
+    const recentEntries = roadEntryData.filter(item => new Date(item.timestamp) >= oneWeekAgo);
+    
+    res.status(200).json({
+      totalEntries: roadEntryData.length,
+      reviewStatusDistribution,
+      severityDistribution,
+      damageTypeDistribution,
+      recentEntries: recentEntries.length,
+      latestEntries: roadEntryData.slice(0, 5) // Return 5 most recent entries
+    });
+  } catch (error) {
+    console.error("Error fetching road stats:", error);
+    res.status(500).json({ error: "Server error. Could not fetch road statistics." });
   }
 });
 

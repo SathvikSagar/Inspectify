@@ -505,7 +505,7 @@ const SignupPage = () => {
             <div className="relative z-10 h-full flex flex-col justify-between p-12">
               <div>
                 <h2 className="text-3xl font-bold text-white mb-6">Join Our Road Maintenance Community</h2>
-                <p className="text-white/80 mb-8 leading-relaxed">
+                <p className="text-white mb-8 leading-relaxed">
                   By creating an account, you'll be able to report road issues, track repairs, and help improve infrastructure in your community.
                 </p>
                 
@@ -528,14 +528,14 @@ const SignupPage = () => {
               
               <div className="bg-white/10 rounded-xl p-6 backdrop-blur-sm">
                 <div className="flex items-center space-x-4">
-                  <div className="h-12 w-12 rounded-full bg-white flex items-center justify-center">
-                    <svg className="h-6 w-6 text-green-600" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <div className="h-12 w-12 rounded-full bg-white/20 flex items-center justify-center">
+                    <svg className="h-6 w-6 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
                     </svg>
                   </div>
                   <div>
                     <p className="text-white font-medium">"Since joining, I've reported 5 potholes that have been fixed within weeks!"</p>
-                    <p className="text-white/70 text-sm mt-1">- Community Member</p>
+                    <p className="text-white text-sm mt-1">- Community Member</p>
                   </div>
                 </div>
               </div>
