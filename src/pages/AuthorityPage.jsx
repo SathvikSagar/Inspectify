@@ -22,6 +22,8 @@ import {
   Clock,
   AlertTriangle,
   CheckCircle,
+  Trash2,
+  AlertCircle,
 } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import Sidebar from "../components/Sidebar";
@@ -43,6 +45,8 @@ const AuthorityPage = () => {
   const [userId, setUserId] = useState(null);
   const [userName, setUserName] = useState("");
   const [imageModal, setImageModal] = useState({ open: false, image: null, item: null });
+  const [deleteModal, setDeleteModal] = useState({ open: false, itemId: null, itemName: null });
+  const [deleting, setDeleting] = useState(false);
   const [dashboardStats, setDashboardStats] = useState({
     totalInspections: { count: 0, newThisWeek: 0 },
     highSeverityIssues: { count: 0, percentage: 0 },
@@ -223,6 +227,52 @@ const AuthorityPage = () => {
     setFilters({ address: "", date: "", status: "all" });
     setSearchTerm("");
   };
+  
+  const handleDeleteClick = (item) => {
+    setDeleteModal({
+      open: true,
+      itemId: item._id,
+      itemName: item.address || `Image ${item._id.substring(0, 8)}`
+    });
+  };
+  
+  const handleDeleteConfirm = async () => {
+    if (!deleteModal.itemId || deleting) return;
+    
+    try {
+      setDeleting(true);
+      
+      console.log("Deleting item with ID:", deleteModal.itemId);
+      
+      // Make API call to delete the item
+      const response = await fetch(`http://localhost:5000/api/road-data/${deleteModal.itemId}`, {
+        method: 'DELETE',
+        headers: {
+          'Content-Type': 'application/json'
+        }
+      });
+      
+      if (!response.ok) {
+        throw new Error(`Failed to delete item: ${response.status} ${response.statusText}`);
+      }
+      
+      // Remove the item from both the main data and filtered data states
+      setRoadData(prevData => prevData.filter(item => item._id !== deleteModal.itemId));
+      setFilteredData(prevData => prevData.filter(item => item._id !== deleteModal.itemId));
+      
+      // Close the modal
+      setDeleteModal({ open: false, itemId: null, itemName: null });
+      
+      // Show success message (you could add a toast notification here)
+      console.log(`Successfully deleted item ${deleteModal.itemId}`);
+      
+    } catch (error) {
+      console.error("Error deleting item:", error);
+      alert(`Failed to delete item: ${error.message}`);
+    } finally {
+      setDeleting(false);
+    }
+  };
 
   useEffect(() => {
     let updated = [...roadData];
@@ -368,11 +418,64 @@ const AuthorityPage = () => {
       </div>
     );
   };
+  
+  // Delete Confirmation Modal Component
+  const DeleteConfirmationModal = () => {
+    if (!deleteModal.open) return null;
+    
+    return (
+      <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+        <div className="bg-white rounded-lg shadow-xl max-w-md w-full p-6">
+          <div className="text-center">
+            <div className="mx-auto flex items-center justify-center h-12 w-12 rounded-full bg-red-100 mb-4">
+              <AlertCircle className="h-6 w-6 text-red-600" />
+            </div>
+            <h3 className="text-lg font-medium text-gray-900 mb-2">Confirm Deletion</h3>
+            <p className="text-sm text-gray-500 mb-6">
+              Are you sure you want to delete this item? <br />
+              <span className="font-medium text-gray-700">{deleteModal.itemName}</span><br />
+              This action cannot be undone.
+            </p>
+          </div>
+          
+          <div className="flex justify-end gap-3">
+            <button
+              onClick={() => setDeleteModal({ open: false, itemId: null, itemName: null })}
+              className="px-4 py-2 bg-gray-100 text-gray-700 rounded-lg hover:bg-gray-200 transition-colors font-medium"
+              disabled={deleting}
+            >
+              Cancel
+            </button>
+            <button
+              onClick={handleDeleteConfirm}
+              className="px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 transition-colors font-medium flex items-center"
+              disabled={deleting}
+            >
+              {deleting ? (
+                <>
+                  <Loader2 className="animate-spin mr-2 h-4 w-4" />
+                  Deleting...
+                </>
+              ) : (
+                <>
+                  <Trash2 className="mr-2 h-4 w-4" />
+                  Delete
+                </>
+              )}
+            </button>
+          </div>
+        </div>
+      </div>
+    );
+  };
 
   return (
     <div className="min-h-screen flex bg-gray-50">
       {/* Image Modal */}
       <ImageModal />
+      
+      {/* Delete Confirmation Modal */}
+      <DeleteConfirmationModal />
       
       {/* Sidebar Component */}
       <Sidebar activeTab={activeTab} userName={userName} userId={userId} />
@@ -728,6 +831,13 @@ const AuthorityPage = () => {
                               >
                                 <FaChartArea />
                               </button>
+                              <button
+                                onClick={() => handleDeleteClick(item)}
+                                className="p-1.5 bg-red-100 text-red-600 rounded-lg hover:bg-red-200 transition"
+                                title="Delete"
+                              >
+                                <Trash2 size={16} />
+                              </button>
                             </div>
                           </td>
                         </tr>
@@ -784,6 +894,14 @@ const AuthorityPage = () => {
                           className="flex-1 py-1.5 bg-green-600 text-white rounded hover:bg-green-700 transition text-sm flex items-center justify-center"
                         >
                           <FaChartArea className="mr-1" /> Predict
+                        </button>
+                      </div>
+                      <div className="mt-2">
+                        <button
+                          onClick={() => handleDeleteClick(item)}
+                          className="w-full py-1.5 bg-red-50 text-red-600 rounded hover:bg-red-100 transition text-sm flex items-center justify-center"
+                        >
+                          <Trash2 size={16} className="mr-1" /> Delete
                         </button>
                       </div>
                     </div>

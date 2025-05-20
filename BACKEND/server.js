@@ -42,7 +42,7 @@ const io = new Server(server, {
 // Configure CORS for Express
 app.use(cors({
   origin: '*',
-  methods: ['GET', 'POST', 'OPTIONS'],
+  methods: ['GET', 'POST', 'DELETE', 'OPTIONS'],
   credentials: true,
   allowedHeaders: ['Content-Type', 'Authorization', 'X-Requested-With']
 }));
@@ -50,7 +50,7 @@ app.use(cors({
 // Add CORS headers to all responses
 app.use((req, res, next) => {
   res.header('Access-Control-Allow-Origin', '*');
-  res.header('Access-Control-Allow-Methods', 'GET, POST, OPTIONS');
+  res.header('Access-Control-Allow-Methods', 'GET, POST, DELETE, OPTIONS');
   res.header('Access-Control-Allow-Headers', 'Content-Type, Authorization, X-Requested-With');
   res.header('Access-Control-Allow-Credentials', 'true');
   
@@ -1524,6 +1524,45 @@ app.get("/api/road-entries", async (req, res) => {
   }
 });
 
+// --- /api/road-entries/:id --- (DELETE)
+app.delete("/api/road-entries/:id", async (req, res) => {
+  try {
+    const { id } = req.params;
+    
+    // Validate the ID format
+    if (!id.match(/^[0-9a-f]{24}$/i)) {
+      return res.status(400).json({ error: "Invalid ID format" });
+    }
+    
+    // Find and delete the entry
+    const result = await RoadEntry.findByIdAndDelete(id);
+    
+    if (!result) {
+      return res.status(404).json({ error: "Entry not found" });
+    }
+    
+    // If the entry had an image, delete it from the filesystem
+    if (result.imagePath) {
+      const imagePath = path.join(__dirname, result.imagePath);
+      try {
+        if (fs.existsSync(imagePath)) {
+          fs.unlinkSync(imagePath);
+          console.log(`Deleted image file: ${imagePath}`);
+        }
+      } catch (fileError) {
+        console.error(`Error deleting image file: ${fileError.message}`);
+        // Continue with the response even if file deletion fails
+      }
+    }
+    
+    console.log(`Successfully deleted road entry with ID: ${id}`);
+    res.status(200).json({ message: "Entry deleted successfully" });
+  } catch (error) {
+    console.error("Error deleting road entry:", error);
+    res.status(500).json({ error: "Error deleting entry" });
+  }
+});
+
 // --- /api/user/:id ---
 app.get("/api/user/:id", async (req, res) => {
   try {
@@ -1596,6 +1635,45 @@ app.get("/api/road-data", async (req, res) => {
   } catch (error) {
     console.error("Error fetching road data:", error);
     res.status(500).json({ error: "Server error. Could not fetch data." });
+  }
+});
+
+// --- /api/road-data/:id --- (DELETE)
+app.delete("/api/road-data/:id", async (req, res) => {
+  try {
+    const { id } = req.params;
+    
+    // Validate the ID format
+    if (!id.match(/^[0-9a-f]{24}$/i)) {
+      return res.status(400).json({ error: "Invalid ID format" });
+    }
+    
+    // Find and delete the entry
+    const result = await RoadEntry.findByIdAndDelete(id);
+    
+    if (!result) {
+      return res.status(404).json({ error: "Entry not found" });
+    }
+    
+    // If the entry had an image, delete it from the filesystem
+    if (result.imagePath) {
+      const imagePath = path.join(__dirname, result.imagePath);
+      try {
+        if (fs.existsSync(imagePath)) {
+          fs.unlinkSync(imagePath);
+          console.log(`Deleted image file: ${imagePath}`);
+        }
+      } catch (fileError) {
+        console.error(`Error deleting image file: ${fileError.message}`);
+        // Continue with the response even if file deletion fails
+      }
+    }
+    
+    console.log(`Successfully deleted road entry with ID: ${id}`);
+    res.status(200).json({ message: "Entry deleted successfully" });
+  } catch (error) {
+    console.error("Error deleting road entry:", error);
+    res.status(500).json({ error: "Error deleting entry" });
   }
 });
 

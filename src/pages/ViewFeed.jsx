@@ -445,7 +445,7 @@ const ViewFeed = () => {
               <p className="font-bold text-sm">
                 {notification.type === 'success' ? 'Success' : 'Error'}
               </p>
-              <p className="text-sm text-white text-opacity-90">{notification.message}</p>
+              <p className="text-sm text-white font-medium">{notification.message}</p>
             </div>
             <button 
               onClick={() => setNotification({ show: false, message: '', type: '' })}
@@ -660,7 +660,7 @@ const ViewFeed = () => {
                       <td className="px-4 py-4">
                         <div className="max-w-md">
                           <div className="text-sm font-medium text-gray-900 truncate">{feedback.subject}</div>
-                          <div className="text-sm text-gray-500 truncate mt-1">{feedback.message}</div>
+                          <div className="text-sm text-gray-900 truncate mt-1">{feedback.message}</div>
                         </div>
                       </td>
                       <td className="px-4 py-4 whitespace-nowrap">
@@ -820,7 +820,7 @@ const ViewFeed = () => {
                   <textarea
                     id="reply"
                     rows={5}
-                    className="w-full border border-gray-300 rounded-lg p-3 focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-green-500 transition-all duration-200"
+                    className="w-full border border-gray-300 rounded-lg p-3 focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-green-500 transition-all duration-200 text-gray-900"
                     placeholder="Type your reply here..."
                     value={replyText}
                     onChange={(e) => setReplyText(e.target.value)}
