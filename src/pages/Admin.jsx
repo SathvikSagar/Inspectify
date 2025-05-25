@@ -190,7 +190,7 @@ const Admin = () => {
         // Only fetch stats for the current user if not an admin
         const isAdmin = userId.startsWith('admin_');
         const url = isAdmin 
-          ? "http://localhost:5000/api/report-stats" // Admin sees all stats
+          ? "http://localhost:5000/report-stats" // Admin sees all stats
           : `http://localhost:5000/api/report-stats?userId=${userId}`; // Regular users see only their stats
         
         const response = await fetch(url);
@@ -607,12 +607,9 @@ const Admin = () => {
                   )}
                 </div>
                 {weeklyReportData.length > 0 && (
-                  <div className="mt-4 pt-4 border-t border-gray-100 flex justify-between text-sm">
+                  <div className="mt-4 pt-4 border-t border-gray-100 text-sm">
                     <div className="text-gray-500">
                       <span className="font-medium text-gray-700">Total:</span> {weeklyReportData.reduce((sum, item) => sum + item.reports, 0)} reports
-                    </div>
-                    <div className="text-blue-600 font-medium cursor-pointer hover:underline">
-                      View Details →
                     </div>
                   </div>
                 )}
@@ -691,12 +688,9 @@ const Admin = () => {
                   )}
                 </div>
                 {damageTypeData.length > 0 && (
-                  <div className="mt-4 pt-4 border-t border-gray-100 flex justify-between text-sm">
+                  <div className="mt-4 pt-4 border-t border-gray-100 text-sm">
                     <div className="text-gray-500">
                       <span className="font-medium text-gray-700">Most common:</span> {damageTypeData.sort((a, b) => b.value - a.value)[0]?.name}
-                    </div>
-                    <div className="text-green-600 font-medium cursor-pointer hover:underline">
-                      View Details →
                     </div>
                   </div>
                 )}
@@ -774,12 +768,9 @@ const Admin = () => {
                 </div>
                 {severityData.length > 0 && (
                   <div className="mt-4 pt-4 border-t border-gray-100">
-                    <div className="flex justify-between items-center">
+                    <div>
                       <div className="text-sm text-gray-500">
                         <span className="font-medium text-gray-700">Highest:</span> {severityData.sort((a, b) => b.value - a.value)[0]?.name}
-                      </div>
-                      <div className="text-yellow-600 font-medium cursor-pointer hover:underline text-sm">
-                        View Details →
                       </div>
                     </div>
                   </div>

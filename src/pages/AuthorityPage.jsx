@@ -166,6 +166,22 @@ const AuthorityPage = () => {
             }
           }
           
+          // Ensure latitude and longitude are properly formatted
+          // Convert string coordinates to numbers if needed
+          if (item.latitude && typeof item.latitude === 'string') {
+            const parsedLat = parseFloat(item.latitude);
+            if (!isNaN(parsedLat)) {
+              item.latitude = parsedLat;
+            }
+          }
+          
+          if (item.longitude && typeof item.longitude === 'string') {
+            const parsedLng = parseFloat(item.longitude);
+            if (!isNaN(parsedLng)) {
+              item.longitude = parsedLng;
+            }
+          }
+          
           return item;
         });
         
@@ -373,7 +389,8 @@ const AuthorityPage = () => {
                     <h4 className="text-sm font-medium text-gray-500">LOCATION</h4>
                     <p className="text-gray-900 mt-1">{imageModal.item.address || 'No address available'}</p>
                     <p className="text-sm text-gray-500 mt-1">
-                      {imageModal.item.latitude}, {imageModal.item.longitude}
+                      {imageModal.item.latitude ? (typeof imageModal.item.latitude === 'number' ? imageModal.item.latitude.toFixed(6) : imageModal.item.latitude) : 'N/A'}, 
+                      {imageModal.item.longitude ? (typeof imageModal.item.longitude === 'number' ? imageModal.item.longitude.toFixed(6) : imageModal.item.longitude) : 'N/A'}
                     </p>
                   </div>
                   
@@ -794,8 +811,8 @@ const AuthorityPage = () => {
                           <td className="px-6 py-4">
                             <div className="line-clamp-2">{item.address || "N/A"}</div>
                             <div className="text-xs text-gray-500 mt-1">
-                              {typeof item.latitude === 'number' ? item.latitude.toFixed(4) : 'N/A'}, 
-                              {typeof item.longitude === 'number' ? item.longitude.toFixed(4) : 'N/A'}
+                              {item.latitude ? (typeof item.latitude === 'number' ? item.latitude.toFixed(4) : item.latitude) : 'N/A'}, 
+                              {item.longitude ? (typeof item.longitude === 'number' ? item.longitude.toFixed(4) : item.longitude) : 'N/A'}
                             </div>
                           </td>
                           <td className="px-6 py-4">
@@ -865,8 +882,14 @@ const AuthorityPage = () => {
                     <div className="p-4">
                       <div className="flex items-start mb-2">
                         <MapPin className="w-4 h-4 text-gray-500 mt-1 mr-1 flex-shrink-0" />
-                        <div className="text-sm text-gray-800 line-clamp-2">
-                          {item.address || "N/A"}
+                        <div>
+                          <div className="text-sm text-gray-800 line-clamp-2">
+                            {item.address || "N/A"}
+                          </div>
+                          <div className="text-xs text-gray-500 mt-1">
+                            {item.latitude ? (typeof item.latitude === 'number' ? item.latitude.toFixed(4) : item.latitude) : 'N/A'}, 
+                            {item.longitude ? (typeof item.longitude === 'number' ? item.longitude.toFixed(4) : item.longitude) : 'N/A'}
+                          </div>
                         </div>
                       </div>
                       <div className="flex items-center text-xs text-gray-500 mb-3">

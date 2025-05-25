@@ -1,76 +1,84 @@
-import express from "express";
-import cors from "cors";
-import mongoose from "mongoose";
-import bcrypt from "bcrypt";
-import dotenv from "dotenv";
-import multer from "multer";
-import { spawn } from "child_process";
-import fs from "fs";
-import path from "path";
-import { Server } from "socket.io";
-import http from "http";
-import nodemailer from "nodemailer";
-
+// Import Statements - Essential modules for server functionality
+import express from "express";                // Imports Express.js framework for creating the web server
+import cors from "cors";                      // Imports CORS middleware to handle cross-origin requests
+import mongoose from "mongoose";              // Imports Mongoose for MongoDB object modeling
+import bcrypt from "bcrypt";                  // Imports bcrypt for password hashing and verification
+import dotenv from "dotenv";                  // Imports dotenv for loading environment variables
+import multer from "multer";                  // Imports multer for handling file uploads
+import { spawn } from "child_process";        // Imports spawn from child_process to run Python scripts
+import fs from "fs";                          // Imports file system module for file operations
+import path from "path";                      // Imports path module for handling file paths
+import { Server } from "socket.io";           // Imports Socket.IO server for real-time communication
+import http from "http";                      // Imports HTTP module to create the server
+import nodemailer from "nodemailer";          // Imports nodemailer for sending emails
+// Load environment variables from .env file
 dotenv.config();
 
-const PORT = process.env.PORT || 5000;
-const MONGO_URI = process.env.MONGO_URI || "mongodb://localhost:27017/Inspectify";
-const __dirname = path.resolve();
+// Configuration Setup - Server and database settings
+const PORT = process.env.PORT || 5000;        // Sets server port from environment or defaults to 5000
+const MONGO_URI = process.env.MONGO_URI || "mongodb://localhost:27017/Inspectify"; // Sets MongoDB connection string
+const __dirname = path.resolve();             // Gets the current directory path (ES modules don't have __dirname)
 
 // Define storage directories based on environment
-const isProduction = process.env.NODE_ENV === 'production';
-const STORAGE_DIR = isProduction ? '/tmp' : __dirname;
-const UPLOADS_DIR = path.join(STORAGE_DIR, isProduction ? 'uploads' : 'uploads');
-const FINAL_DIR = path.join(STORAGE_DIR, isProduction ? 'final' : 'final');
+const isProduction = process.env.NODE_ENV === 'production'; // Checks if running in production
+const STORAGE_DIR = isProduction ? '/tmp' : __dirname;      // Uses /tmp in production, local directory in development
+const UPLOADS_DIR = path.join(STORAGE_DIR, isProduction ? 'uploads' : 'uploads'); // Path for uploaded images
+const FINAL_DIR = path.join(STORAGE_DIR, isProduction ? 'final' : 'final');       // Path for processed images
 
-const app = express();
-const server = http.createServer(app);
+// Server Setup - Create Express and HTTP server instances
+const app = express();                        // Creates Express application
+const server = http.createServer(app);        // Creates HTTP server with Express app
 
-const io = new Server(server, {
-  cors: { 
-    origin: "*", 
-    methods: ["GET", "POST", "OPTIONS"],
-    credentials: true,
-    allowedHeaders: ["*"]
+// Socket.IO Setup - Real-time communication server
+const io = new Server(server, {               // Creates Socket.IO server with configuration
+  cors: {                                     // CORS settings for Socket.IO
+    origin: "*",                              // Allows connections from any origin
+    methods: ["GET", "POST", "OPTIONS"],      // Allowed HTTP methods
+    credentials: true,                        // Allows cookies to be sent with requests
+    allowedHeaders: ["*"]                     // Allows all headers
   },
-  transports: ['polling', 'websocket'],  // Try polling first, then websocket
-  pingTimeout: 60000,
-  pingInterval: 25000,
-  allowEIO3: true  // Allow Engine.IO 3 compatibility
+  transports: ['polling', 'websocket'],       // Connection methods (polling as fallback)
+  pingTimeout: 60000,                         // Timeout for ping packets (60 seconds)
+  pingInterval: 25000,                         // Interval between pings (25 seconds)
+  allowEIO3: true                             // Allows Engine.IO 3 compatibility
 });
 
+// Middleware Configuration - Set up Express middleware for request handling
+
 // Configure CORS for Express
-app.use(cors({
-  origin: '*',
-  methods: ['GET', 'POST', 'DELETE', 'OPTIONS'],
-  credentials: true,
-  allowedHeaders: ['Content-Type', 'Authorization', 'X-Requested-With']
+app.use(cors({                                // Adds CORS middleware to Express
+  origin: '*',                                // Allows requests from any origin
+  methods: ['GET', 'POST', 'DELETE', 'OPTIONS'], // Allowed HTTP methods
+  credentials: true,                          // Allows cookies to be sent
+  allowedHeaders: ['Content-Type', 'Authorization', 'X-Requested-With'] // Allowed headers
 }));
 
 // Add CORS headers to all responses
-app.use((req, res, next) => {
-  res.header('Access-Control-Allow-Origin', '*');
-  res.header('Access-Control-Allow-Methods', 'GET, POST, DELETE, OPTIONS');
-  res.header('Access-Control-Allow-Headers', 'Content-Type, Authorization, X-Requested-With');
-  res.header('Access-Control-Allow-Credentials', 'true');
+app.use((req, res, next) => {                 // Custom middleware for additional CORS headers
+  res.header('Access-Control-Allow-Origin', '*'); // Allows any origin
+  res.header('Access-Control-Allow-Methods', 'GET, POST, DELETE, OPTIONS'); // Allowed methods
+  res.header('Access-Control-Allow-Headers', 'Content-Type, Authorization, X-Requested-With'); // Allowed headers
+  res.header('Access-Control-Allow-Credentials', 'true'); // Allows credentials
   
   // Handle preflight requests
-  if (req.method === 'OPTIONS') {
-    return res.status(200).end();
+  if (req.method === 'OPTIONS') {             // Special handling for OPTIONS requests (preflight)
+    return res.status(200).end();             // Responds with 200 OK and ends the request
   }
   
-  next();
+  next();                                     // Proceeds to the next middleware
 });
-// Increase JSON payload limit to handle large base64 images
-app.use(express.json({ limit: '50mb' }));
-// Increase URL-encoded payload limit as well
-app.use(express.urlencoded({ limit: '50mb', extended: true }));
-app.use("/uploads", express.static(UPLOADS_DIR));
-app.use("/final", express.static(FINAL_DIR));
+
+// Request body parsing and static file serving
+app.use(express.json({ limit: '50mb' }));     // Parses JSON bodies with 50MB limit for large images
+app.use(express.urlencoded({ limit: '50mb', extended: true })); // Parses URL-encoded bodies
+app.use("/uploads", express.static(UPLOADS_DIR)); // Serves uploaded files statically
+app.use("/final", express.static(FINAL_DIR));     // Serves processed files statically
+
+// Basic Routes - Simple endpoints for monitoring and testing
 
 // Add a health check endpoint
-app.get('/health', (req, res) => {
-  res.status(200).json({ 
+app.get('/health', (req, res) => {            // Health check endpoint for monitoring
+  res.status(200).json({                      // Returns JSON with status information
     status: 'ok', 
     timestamp: new Date().toISOString(),
     socketio: 'enabled',
@@ -79,15 +87,17 @@ app.get('/health', (req, res) => {
 });
 
 // Serve the socket test page
-app.get('/socket-test', (req, res) => {
-  res.sendFile(path.join(__dirname, 'socket_test.html'));
+app.get('/socket-test', (req, res) => {       // Endpoint to serve a Socket.IO test page
+  res.sendFile(path.join(__dirname, 'socket_test.html')); // Sends the HTML file
 });
 
+// Directory Setup - Create necessary directories for file storage
+
 // Create necessary directories
-[UPLOADS_DIR, FINAL_DIR].forEach((dir) => {
-  if (!fs.existsSync(dir)) {
+[UPLOADS_DIR, FINAL_DIR].forEach((dir) => {   // Loops through required directories
+  if (!fs.existsSync(dir)) {                  // Checks if directory exists
     try {
-      fs.mkdirSync(dir, { recursive: true });
+      fs.mkdirSync(dir, { recursive: true }); // Creates directory and parent directories
       console.log(`Created directory: ${dir}`);
     } catch (err) {
       console.warn(`Warning: Could not create directory ${dir}:`, err.message);
@@ -95,15 +105,17 @@ app.get('/socket-test', (req, res) => {
   }
 });
 
+// Database Connection - Connect to MongoDB and set up indexes
+
 mongoose
-  .connect(MONGO_URI, { useNewUrlParser: true, useUnifiedTopology: true })
+  .connect(MONGO_URI, { useNewUrlParser: true, useUnifiedTopology: true }) // Connects to MongoDB
   .then(() => {
     console.log("✅ MongoDB connected");
     
     // Create geospatial index on FinalImage collection after connection
     mongoose.connection.useDb("Safestreet").collection("final_img").createIndex(
-      { "location": "2dsphere" },
-      { background: true }
+      { "location": "2dsphere" },             // Creates a geospatial index for location queries
+      { background: true }                    // Creates index in the background
     ).then(() => {
       console.log("✅ Geospatial index created on final_img collection");
     }).catch(err => {
@@ -112,42 +124,46 @@ mongoose
   })
   .catch((err) => console.error("❌ MongoDB connection error:", err));
 
-const db = mongoose.connection.useDb("Safestreet");
-const loginCollection = db.collection("login");
+// Database References - Get references to database and collections
+const db = mongoose.connection.useDb("Safestreet"); // Uses the Safestreet database
+const loginCollection = db.collection("login");     // References the login collection
 
+// Database Schema Definitions - Define data models for the application
+
+// Feedback schema for user feedback
 const feedbackSchema = new mongoose.Schema({
-  name: String,
-  email: String,
-  subject: String,
-  message: String,
-  completed: { type: Boolean, default: false },
-  dateSubmitted: { type: Date, default: Date.now },
-  userId: { type: String }, // Add userId to track which user submitted the feedback
-  replied: { type: Boolean, default: false }, // Track if a reply has been sent
-  replyText: String, // Store the reply text
-  replyDate: Date, // Store when the reply was sent
+  name: String,                               // User's name
+  email: String,                              // User's email
+  subject: String,                            // Feedback subject
+  message: String,                            // Feedback message
+  completed: { type: Boolean, default: false }, // Whether feedback has been addressed
+  dateSubmitted: { type: Date, default: Date.now }, // Submission date
+  userId: { type: String },                   // User ID who submitted feedback
+  replied: { type: Boolean, default: false }, // Whether a reply has been sent
+  replyText: String,                          // Reply message
+  replyDate: Date,                            // Date of reply
 });
-const Feedback = db.model("Feedback", feedbackSchema);
+const Feedback = db.model("Feedback", feedbackSchema); // Creates Feedback model
 
-// Create the schema first
+// Road entry schema for initial road damage reports
 const roadEntrySchema = new mongoose.Schema({
-  imagePath: String,
-  latitude: String,
-  longitude: String,
-  address: String,
-  timestamp: { type: Date, default: Date.now },
-  reviewed: { type: Boolean, default: false },
-  reviewStatus: { type: String, enum: ['approved', 'rejected', 'pending', 'in-progress'], default: 'pending' },
-  reviewNotes: { type: String, default: '' },
-  severity: { type: String, enum: ['low', 'moderate', 'high', 'severe', 'unknown'], default: 'unknown' },
-  damageType: { 
-    type: mongoose.Schema.Types.Mixed, // Use Mixed type to accept both string and array
+  imagePath: String,                          // Path to the uploaded image
+  latitude: String,                           // Location latitude
+  longitude: String,                          // Location longitude
+  address: String,                            // Human-readable address
+  timestamp: { type: Date, default: Date.now }, // Submission time
+  reviewed: { type: Boolean, default: false }, // Whether entry has been reviewed
+  reviewStatus: { type: String, enum: ['approved', 'rejected', 'pending', 'in-progress'], default: 'pending' }, // Review status
+  reviewNotes: { type: String, default: '' }, // Notes from reviewer
+  severity: { type: String, enum: ['low', 'moderate', 'high', 'severe', 'unknown'], default: 'unknown' }, // Damage severity
+  damageType: {                               // Type of damage detected
+    type: mongoose.Schema.Types.Mixed,        // Can be string or array
     default: ['pothole']
   },
-  recommendedAction: { type: String, default: '' },
-  reviewDate: { type: Date },
-  userId: { type: String, required: true },  // To identify which user uploaded the image
-  reviewerId: { type: String },  // To identify which admin/user reviewed the image
+  recommendedAction: { type: String, default: '' }, // Recommended repair action
+  reviewDate: { type: Date },                 // Date of review
+  userId: { type: String, required: true },   // User who uploaded the image
+  reviewerId: { type: String },               // User who reviewed the entry
 });
 
 // Add a pre-save hook to ensure damageType is always an array
@@ -168,57 +184,59 @@ roadEntrySchema.pre('save', function(next) {
 // Create the model
 const RoadEntry = db.model("RoadEntry", roadEntrySchema, "roadloc");
 
+// FinalImage schema for processed images with AI analysis
 const FinalImage = db.model(
   "FinalImage",
   new mongoose.Schema({
-    imagePath: String,  // Original image path
-    boundingBoxImagePath: String,  // Path to the image with bounding boxes
-    latitude: Number,  // Changed from String to Number for better geospatial queries
-    longitude: Number,  // Changed from String to Number for better geospatial queries
-    address: String,
-    analysisResult: Object,  // Full analysis result from the AI model
-    status: { type: String, enum: ['Pending', 'Critical', 'Processed', 'Resolved'], default: 'Pending' },
-    severity: { type: Number, default: 50 },  // Numeric severity value (0-100)
-    severityLevel: { type: String, enum: ['low', 'moderate', 'high', 'severe', 'unknown'], default: 'unknown' },
-    userId: { type: String, required: true },  // User who uploaded the image
-    processingTime: Number,  // Time taken to process the image in seconds
-    timestamp: { type: Date, default: Date.now },
-    damageType: { type: String, default: 'unknown' },  // Type of damage detected
-    detectionCount: { type: Number, default: 0 },  // Number of detections in the image
-    reviewed: { type: Boolean, default: false },  // Whether the image has been reviewed
-    reviewerId: { type: String },  // ID of the reviewer
-    reviewDate: { type: Date },  // Date of review
-    reviewNotes: { type: String },  // Notes from the reviewer
-    recommendedAction: { type: String },  // Recommended action from the reviewer
-    // Add geospatial index for location-based queries
+    imagePath: String,                        // Original image path
+    boundingBoxImagePath: String,             // Path to image with bounding boxes
+    latitude: Number,                         // Location latitude as number
+    longitude: Number,                        // Location longitude as number
+    address: String,                          // Human-readable address
+    analysisResult: Object,                   // Full AI analysis result
+    status: { type: String, enum: ['Pending', 'Critical', 'Processed', 'Resolved'], default: 'Pending' }, // Processing status
+    severity: { type: Number, default: 50 },  // Numeric severity (0-100)
+    severityLevel: { type: String, enum: ['low', 'moderate', 'high', 'severe', 'unknown'], default: 'unknown' }, // Text severity
+    userId: { type: String, required: true }, // User who uploaded the image
+    processingTime: Number,                   // Time taken to process the image
+    timestamp: { type: Date, default: Date.now }, // Submission time
+    damageType: { type: String, default: 'unknown' }, // Type of damage detected
+    detectionCount: { type: Number, default: 0 }, // Number of detections
+    reviewed: { type: Boolean, default: false }, // Whether image has been reviewed
+    reviewerId: { type: String },             // User who reviewed the image
+    reviewDate: { type: Date },               // Date of review
+    reviewNotes: { type: String },            // Notes from reviewer
+    recommendedAction: { type: String },      // Recommended repair action
+    // Geospatial index for location-based queries
     location: {
-      type: { type: String, enum: ['Point'], default: 'Point' },
+      type: { type: String, enum: ['Point'], default: 'Point' }, // GeoJSON type
       coordinates: { type: [Number], default: [0, 0] }  // [longitude, latitude]
     }
   }, {
-    timestamps: true  // Adds createdAt and updatedAt fields
+    timestamps: true                          // Adds createdAt and updatedAt fields
   }),
-  "final_img"
+  "final_img"                                 // Collection name
 );
 
-const storage = multer.memoryStorage();
+// File Upload Configuration - Set up multer for handling file uploads
+const storage = multer.memoryStorage();       // Uses memory storage for file uploads
 const upload = multer({ 
-  storage,
+  storage,                                    // Uses the defined storage
   limits: {
-    fileSize: 10 * 1024 * 1024, // 10MB limit for uploaded files
+    fileSize: 10 * 1024 * 1024,               // 10MB limit for uploaded files
   }
 });
 
-// Track user connections with their userId
-const userSockets = new Map(); // Map userId -> socket.id
+// WebSocket User Tracking - Track connected users and their socket IDs
+const userSockets = new Map();                // Map to track user connections (userId -> socket.id)
 
 // Function to validate user type
 const validateUserType = (userId) => {
-  if (!userId) return { valid: false, message: "No userId provided" };
+  if (!userId) return { valid: false, message: "No userId provided" }; // Checks if userId exists
   
   // Check if userId format is valid
-  const isAdmin = userId.startsWith('admin_');
-  const isRegularUser = userId.includes('_') || userId.match(/^[0-9a-f]{24}$/i); // MongoDB ObjectId format
+  const isAdmin = userId.startsWith('admin_'); // Admin IDs start with 'admin_'
+  const isRegularUser = userId.includes('_') || userId.match(/^[0-9a-f]{24}$/i); // Regular user format
   
   if (!isAdmin && !isRegularUser) {
     return { valid: false, message: "Invalid userId format" };
@@ -232,36 +250,37 @@ const validateUserType = (userId) => {
   };
 };
 
-io.on("connection", (socket) => {
+// Socket.IO Connection Handling - Manage real-time connections with clients
+io.on("connection", (socket) => {             // Handles new socket connections
   console.log("🟢 WebSocket client connected:", socket.id);
   
   // Set a connection timeout if not authenticated within 30 seconds
   const authTimeout = setTimeout(() => {
-    if (!socket.userId) {
+    if (!socket.userId) {                     // Checks if user has authenticated
       console.log(`Socket ${socket.id} not authenticated within timeout period, disconnecting`);
-      socket.disconnect(true);
+      socket.disconnect(true);                // Disconnects unauthenticated users
     }
   }, 30000);
   
   // Handle user authentication
-  socket.on("authenticate", (userId) => {
+  socket.on("authenticate", (userId) => {     // Listens for authentication events
     // Clear the auth timeout since we received an authentication attempt
     clearTimeout(authTimeout);
     
     // Validate the user
     const validation = validateUserType(userId);
     
-    if (validation.valid) {
+    if (validation.valid) {                   // If user is valid
       console.log(`User ${userId} (${validation.userType}) authenticated with socket ${socket.id}`);
       
       // Store user info in socket and tracking map
-      userSockets.set(userId, socket.id);
-      socket.userId = userId;
-      socket.isAdmin = validation.isAdmin;
-      socket.userType = validation.userType;
+      userSockets.set(userId, socket.id);     // Maps userId to socket.id
+      socket.userId = userId;                 // Stores userId in socket object
+      socket.isAdmin = validation.isAdmin;    // Stores admin status
+      socket.userType = validation.userType;  // Stores user type
       
       // Send confirmation to client
-      socket.emit('auth_success', {
+      socket.emit('auth_success', {           // Emits success event to client
         userId,
         userType: validation.userType,
         message: `Authentication successful as ${validation.userType}`
@@ -273,9 +292,9 @@ io.on("connection", (socket) => {
         const userType = uid.startsWith('admin_') ? 'admin' : 'user';
         console.log(`- ${userType.toUpperCase()}: ${uid} -> Socket ${sid}`);
       }
-    } else {
+    } else {                                  // If user is invalid
       console.log(`Authentication failed for socket ${socket.id}: ${validation.message}`);
-      socket.emit('auth_error', { message: validation.message });
+      socket.emit('auth_error', { message: validation.message }); // Emits error event
       
       // Optionally disconnect invalid users
       // socket.disconnect(true);
@@ -283,15 +302,15 @@ io.on("connection", (socket) => {
   });
   
   // Handle reconnection
-  socket.on("reconnect", (attemptNumber) => {
+  socket.on("reconnect", (attemptNumber) => { // Handles socket reconnections
     console.log(`Socket ${socket.id} reconnected after ${attemptNumber} attempts`);
     
     // Re-authenticate on reconnection
-    if (socket.userId) {
+    if (socket.userId) {                      // If socket had a userId before
       console.log(`Re-authenticating user ${socket.userId} after reconnection`);
-      userSockets.set(socket.userId, socket.id);
+      userSockets.set(socket.userId, socket.id); // Updates socket.id in tracking map
       
-      socket.emit('auth_success', {
+      socket.emit('auth_success', {           // Emits success event to client
         userId: socket.userId,
         userType: socket.userType,
         message: `Re-authentication successful as ${socket.userType}`
@@ -300,7 +319,7 @@ io.on("connection", (socket) => {
   });
   
   // Handle ping for testing
-  socket.on("ping", (data) => {
+  socket.on("ping", (data) => {               // Simple ping-pong for connection testing
     console.log(`Received ping from ${socket.id}:`, data);
     socket.emit("pong", { 
       time: new Date().toISOString(),
@@ -310,16 +329,16 @@ io.on("connection", (socket) => {
   });
 
   // Handle errors
-  socket.on("error", (error) => {
+  socket.on("error", (error) => {             // Handles socket errors
     console.error(`Socket ${socket.id} error:`, error);
   });
   
-  socket.on("disconnect", (reason) => {
+  socket.on("disconnect", (reason) => {       // Handles socket disconnections
     console.log(`🔴 Client disconnected: ${socket.id}, Reason: ${reason}`);
     // Remove user from tracking when they disconnect
     if (socket.userId) {
       console.log(`Removing user ${socket.userId} (${socket.userType}) from connected users`);
-      userSockets.delete(socket.userId);
+      userSockets.delete(socket.userId);      // Removes user from tracking map
       
       // Log remaining connected users
       console.log("Remaining connected users:");
@@ -331,25 +350,29 @@ io.on("connection", (socket) => {
   });
 });
 
-const getFormattedTimestamp = () => {
+// Utility Functions - Helper functions for various operations
+
+const getFormattedTimestamp = () => {         // Creates formatted timestamp for filenames
   const now = new Date();
   return now
     .toISOString()
-    .replace(/[-T:\.Z]/g, "")
-    .slice(0, 15);
+    .replace(/[-T:\.Z]/g, "")                 // Removes special characters
+    .slice(0, 15);                            // Takes first 15 characters
 };
 
-// --- /predict ---
-app.post("/predict", upload.single("image"), async (req, res) => {
+// API Endpoints - Main application routes
+
+// --- /predict --- Initial road image prediction endpoint
+app.post("/predict", upload.single("image"), async (req, res) => { // Handles image prediction requests
   try {
-    const { latitude, longitude, address, userId } = req.body;
-    if (!req.file) return res.status(400).json({ error: "No image file received!" });
+    const { latitude, longitude, address, userId } = req.body; // Gets data from request body
+    if (!req.file) return res.status(400).json({ error: "No image file received!" }); // Validates file
 
     const timestamp = getFormattedTimestamp();
-    const tempImagePath = path.join(STORAGE_DIR, `temp_${timestamp}.jpg`);
+    const tempImagePath = path.join(STORAGE_DIR, `temp_${timestamp}.jpg`); // Creates temporary file path
     
     try {
-      fs.writeFileSync(tempImagePath, req.file.buffer);
+      fs.writeFileSync(tempImagePath, req.file.buffer); // Writes uploaded file to disk
       console.log(`Temporary image saved to: ${tempImagePath}`);
     } catch (err) {
       console.error(`Error saving temporary image: ${err.message}`);
@@ -357,37 +380,36 @@ app.post("/predict", upload.single("image"), async (req, res) => {
     }
 
     // For Vercel, we need to use the full path to the Python executable and script
-    const pythonExecutable = isProduction ? 'python3' : 'python';
+    const pythonExecutable = isProduction ? 'python3' : 'python'; // Different executable based on environment
     const pythonScriptPath = path.join(__dirname, 'models', isProduction ? 'predict_vercel.py' : 'predict.py');
     
     console.log(`Running Python prediction: ${pythonExecutable} ${pythonScriptPath} ${tempImagePath}`);
-    const pythonProcess = spawn(pythonExecutable, [pythonScriptPath, tempImagePath]);
+    const pythonProcess = spawn(pythonExecutable, [pythonScriptPath, tempImagePath]); // Spawns Python process
 
     let predictionResult = "";
 
-    pythonProcess.stdout.on("data", async (data) => {
+    pythonProcess.stdout.on("data", async (data) => { // Collects output from Python script
       predictionResult += data.toString();
     });
 
-    pythonProcess.stderr.on("data", (data) => {
+    pythonProcess.stderr.on("data", (data) => { // Handles errors from Python script
       console.error("Python error:", data.toString());
     });
 
-    pythonProcess.on("close", async (code) => {
+    pythonProcess.on("close", async (code) => { // Handles process completion
       try {
         if (fs.existsSync(tempImagePath)) {
-          fs.unlinkSync(tempImagePath);
+          fs.unlinkSync(tempImagePath);       // Deletes temporary file
           console.log(`Temporary image deleted: ${tempImagePath}`);
         }
       } catch (err) {
         console.warn(`Warning: Could not delete temporary file ${tempImagePath}:`, err.message);
       }
 
-      // Extract just the prediction (Road or Not a Road) from the output
-      // The output now includes confidence information
+      // Extract just the prediction from the output
       const outputLines = predictionResult.trim().split('\n');
       const lastLine = outputLines[outputLines.length - 1];
-      const result = lastLine.split(' ')[0]; // Get just "Road" or "Not a Road"
+      const result = lastLine.split(' ')[0]; // Gets just "Road" or "Not a Road"
       
       console.log("Python prediction output:", predictionResult.trim());
       console.log("Extracted result:", result);
@@ -2228,7 +2250,7 @@ app.post("/api/review-image-v2", async (req, res) => {
         if (error) {
           console.error(`Error sending notification to user ${targetUserId}:`, error);
         } else {
-          console.log(`✅ Notification successfully sent to user ${targetUserId}`);
+          console.log(`Notification successfully sent to user ${targetUserId}`);
         }
       });
       
@@ -2263,7 +2285,7 @@ app.post("/api/review-image-v2", async (req, res) => {
           if (error) {
             console.error(`Error sending notification to admin ${connectedUserId}:`, error);
           } else {
-            console.log(`✅ Notification successfully sent to admin ${connectedUserId}`);
+            console.log(` Notification successfully sent to admin ${connectedUserId}`);
           }
         });
         
@@ -2288,5 +2310,5 @@ app.post("/api/review-image-v2", async (req, res) => {
 
 // --- Start server ---
 server.listen(PORT, () => {
-  console.log(`🚀 Server is running at http://localhost:${PORT}`);
+  console.log(` Server is running at http://localhost:${PORT}`);
 });

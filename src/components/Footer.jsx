@@ -80,7 +80,9 @@ const Footer = () => {
               </a>
             </div>
             <p className="text-sm text-gray-500">
-              Email: info@Inspectify.ai
+              Email: safestreet386@gmail.com<br/>
+              Phone: +040 7244 527490<br/>
+      
             </p>
           </div>
         </div>

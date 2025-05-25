@@ -86,7 +86,7 @@ const Navbar = () => {
         {/* Desktop Button */}
         <div className="hidden md:flex items-center">
           <Link to="/signup">
-            <button className="bg-blue-800 text-white hover:bg-gray-800 rounded-full px-5 py-2 text-sm font-medium transition duration-300">
+            <button className="bg-blue-800 text-white hover:bg-green-800 rounded-full px-5 py-2 text-sm font-medium transition duration-300">
               Get Started
             </button>
           </Link>

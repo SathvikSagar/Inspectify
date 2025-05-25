@@ -69,8 +69,8 @@ const SignupPage = () => {
       console.error("Error sending OTP email:", error);
       
       // For development/testing, still show the OTP in the UI if email sending fails
-      setSuccessMessage(`Your verification code is: ${otpCode}`);
-      
+      setSuccessMessage(`Your verification code is:  `);
+
       // Log detailed error information
       if (error.status) {
         console.error(`EmailJS Status: ${error.status}, Text: ${error.text}`);

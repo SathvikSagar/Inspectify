@@ -1,57 +1,72 @@
-import React, { useState, useEffect, useRef } from 'react';
-import { useLocation, useNavigate } from 'react-router-dom';
-import { MapContainer, TileLayer, Marker, Popup } from 'react-leaflet';
-import { BeatLoader } from 'react-spinners';
-import L from 'leaflet';
-import 'leaflet/dist/leaflet.css';
+// Import necessary React hooks and libraries
+import React, { useState, useEffect, useRef } from 'react';         // Core React with hooks for state, effects, and refs
+import { useLocation, useNavigate } from 'react-router-dom';        // Router hooks for location and navigation
+import { MapContainer, TileLayer, Marker, Popup } from 'react-leaflet'; // Map components from react-leaflet
+import { BeatLoader } from 'react-spinners';                        // Loading animation component
+import L from 'leaflet';                                            // Leaflet map library
+import 'leaflet/dist/leaflet.css';                                  // Leaflet CSS styles
 import {
-  Search,
-  AlertTriangle,
-  CheckCircle,
-  Clock,
-  Layers,
-  Info,
-  X,
-  Zap,
-  ChevronRight,
-  Camera,
-  BarChart,
-  MapPin,
-  FileText
-} from 'lucide-react';
-import Sidebar from "../components/Sidebar";
+  Search,                                                           // Search icon
+  AlertTriangle,                                                    // Warning icon
+  CheckCircle,                                                      // Success icon
+  Clock,                                                            // Time/processing icon
+  Layers,                                                           // Layers icon for map
+  Info,                                                             // Information icon
+  X,                                                                // Close/cancel icon
+  Zap,                                                              // Fast/processing icon
+  ChevronRight,                                                     // Right arrow icon
+  Camera,                                                           // Camera icon for image capture
+  BarChart,                                                         // Chart icon for analytics
+  MapPin,                                                           // Location pin icon
+  FileText                                                          // Document/report icon
+} from 'lucide-react';                                              // Icon library
+import Sidebar from "../components/Sidebar";                        // Sidebar navigation component
 
+/**
+ * Upload Component - Handles image upload and AI analysis of road damage
+ * This is a core feature of the application that processes images and displays analysis results
+ */
 const Upload = () => {
-  const location = useLocation();
-  const navigate = useNavigate();
-  const currentPath = location.pathname;
+  // Router hooks for navigation and accessing route state
+  const location = useLocation();                                   // Get current location object
+  const navigate = useNavigate();                                   // Navigation function
+  const currentPath = location.pathname;                            // Current URL path
 
+  // Extract data passed from previous page via router state
   const { imagePath, latitude, longitude, address: initialAddress } = location.state || {};
 
-  const [address, setAddress] = useState(initialAddress || 'Fetching...');
-  const [lat, setLat] = useState(latitude || null);
-  const [lng, setLng] = useState(longitude || null);
-  const [previewUrl, setPreviewUrl] = useState(null);
-  const [analysisResult, setAnalysisResult] = useState(null);
-  const [loading, setLoading] = useState(false);
-  const [saving, setSaving] = useState(false);
-  const [error, setError] = useState(null);
-  const [showMap, setShowMap] = useState(false);
-  const [notification, setNotification] = useState(null);
+  // State variables for component
+  const [address, setAddress] = useState(initialAddress || 'Fetching...'); // Location address
+  const [lat, setLat] = useState(latitude || null);                 // Latitude coordinate
+  const [lng, setLng] = useState(longitude || null);                // Longitude coordinate
+  const [previewUrl, setPreviewUrl] = useState(null);               // URL for image preview
+  const [analysisResult, setAnalysisResult] = useState(null);       // AI analysis results
+  const [loading, setLoading] = useState(false);                    // Loading state for analysis
+  const [saving, setSaving] = useState(false);                      // Saving state for results
+  const [error, setError] = useState(null);                         // Error state
+  const [showMap, setShowMap] = useState(false);                    // Toggle map visibility
+  const [notification, setNotification] = useState(null);           // User notification message
 
-  const canvasRef = useRef(null);
+  // Reference to canvas element for drawing bounding boxes
+  const canvasRef = useRef(null);                                   // Ref for canvas element
 
+  // Set preview URL when imagePath changes
   useEffect(() => {
     if (imagePath) {
-      setPreviewUrl(`http://localhost:5000/${imagePath}`);
+      setPreviewUrl(`http://localhost:5000/${imagePath}`);          // Construct full URL to image
     }
-  }, [imagePath]);
+  }, [imagePath]);                                                  // Dependency array with imagePath
 
+  // Fetch address from coordinates when lat/lng change
   useEffect(() => {
-    if (!initialAddress && lat && lng) {
-      fetchAddress(lat, lng);
+    if (lat && lng) {
+      // If we have coordinates, always try to get the address
+      // unless we already have an initialAddress from the router state
+      if (!initialAddress || address === 'Fetching...') {
+        fetchAddress(lat, lng);                                     // Get address from coordinates
+      }
     }
-  }, [lat, lng]);
+  }, [lat, lng, initialAddress]);                                   // Run when coordinates change
 
   // Get user ID from localStorage
   const [userId, setUserId] = useState(null);
@@ -111,122 +126,150 @@ const Upload = () => {
 
   const fetchAddress = async (latitude, longitude) => {
     try {
-      const apiKey = 'YOUR_GOOGLE_MAPS_API_KEY';
+      // Use OpenStreetMap Nominatim API (no API key required)
       const response = await fetch(
-        `https://maps.googleapis.com/maps/api/geocode/json?latlng=${latitude},${longitude}&key=${apiKey}`
+        `https://nominatim.openstreetmap.org/reverse?format=json&lat=${latitude}&lon=${longitude}&zoom=18&addressdetails=1`,
+        {
+          headers: {
+            'Accept': 'application/json',
+            'User-Agent': 'RoadVision App' // Nominatim requires a user agent
+          }
+        }
       );
+      
       const data = await response.json();
-      if (data.status === 'OK' && data.results.length > 0) {
-        setAddress(data.results[0].formatted_address);
+      
+      if (data && data.display_name) {
+        setAddress(data.display_name);
       } else {
-        setAddress('Address not found.');
+        // If the API doesn't return a valid address, use coordinates
+        setAddress(`Location: ${latitude.toFixed(6)}, ${longitude.toFixed(6)}`);
       }
-    } catch {
-      setAddress('Failed to fetch address.');
+    } catch (error) {
+      console.error('Address lookup error:', error);
+      // In case of any error, display coordinates
+      setAddress(`Location: ${latitude.toFixed(6)}, ${longitude.toFixed(6)}`);
     }
   };
 
+  /**
+   * handleAnalyzeImage - Core function that processes the uploaded image using AI
+   * 
+   * This function:
+   * 1. Fetches the image from the server
+   * 2. Sends it to the AI analysis endpoint
+   * 3. Processes and displays the results
+   * 4. Saves the analysis to the database
+   */
   const handleAnalyzeImage = async () => {
-    if (!imagePath || loading || saving) return;
-    setLoading(true);
-    setSaving(false);
-    setError(null);
-    setAnalysisResult(null);
+    // Guard clause - prevent multiple simultaneous analyses
+    if (!imagePath || loading || saving) return;                    // Exit if no image or already processing
     
-    // Show immediate feedback to user
+    // Reset states and prepare for analysis
+    setLoading(true);                                               // Set loading state to true
+    setSaving(false);                                               // Reset saving state
+    setError(null);                                                 // Clear any previous errors
+    setAnalysisResult(null);                                        // Clear previous results
+    
+    // Show immediate feedback to user about process starting
     setNotification("Starting image analysis... This may take a few seconds.");
     
-    // Define progressInterval at the function level so it's accessible in catch/finally blocks
+    // Define progressInterval at function level for access in catch/finally blocks
     let progressInterval;
 
     try {
-      // Start timer to measure performance
-      const startTime = performance.now();
+      // Start performance timer to measure total processing time
+      const startTime = performance.now();                          // Record start time
       
-      // Fetch the image with timeout and optimized settings
-      const controller = new AbortController();
-      const timeoutId = setTimeout(() => controller.abort(), 10000); // 10 second timeout
+      // STEP 1: Fetch the image with timeout and optimized settings
+      const controller = new AbortController();                     // Controller for fetch timeout
+      const timeoutId = setTimeout(() => controller.abort(), 10000); // 10 second timeout for fetch
       
+      // Fetch the image from the server with optimized settings
       const response = await fetch(`http://localhost:5000/${imagePath}`, {
-        signal: controller.signal,
-        cache: 'no-store', // Prevent caching
-        priority: 'high'   // Set high priority
+        signal: controller.signal,                                  // Connect abort controller
+        cache: 'no-store',                                          // Prevent caching for fresh data
+        priority: 'high'                                            // Set high priority for fetch
       });
-      clearTimeout(timeoutId);
+      clearTimeout(timeoutId);                                      // Clear timeout after successful fetch
       
-      if (!response.ok) throw new Error('Failed to fetch image');
-      const imageBlob = await response.blob();
+      // Handle fetch errors
+      if (!response.ok) throw new Error('Failed to fetch image');   // Throw error if fetch failed
+      const imageBlob = await response.blob();                      // Convert response to blob
 
-      // Prepare form data with all necessary information
-      const formData = new FormData();
-      formData.append('image', imageBlob, 'image.jpg');
-      formData.append('latitude', lat?.toString() || '');
-      formData.append('longitude', lng?.toString() || '');
+      // STEP 2: Prepare form data with all necessary information for analysis
+      const formData = new FormData();                              // Create form data object
+      formData.append('image', imageBlob, 'image.jpg');             // Add image blob
+      formData.append('latitude', lat?.toString() || '');           // Add latitude if available
+      formData.append('longitude', lng?.toString() || '');          // Add longitude if available
       
-      // Update notification with progress indicators
+      // Update notification to show analysis has started
       setNotification("Processing image... Analyzing road damage patterns.");
       
-      // Set up a progress indicator
-      let progressCounter = 0;
+      // STEP 3: Set up a progress indicator to show activity during long processing
+      let progressCounter = 0;                                      // Initialize progress counter
       progressInterval = setInterval(() => {
-        progressCounter += 5;
-        if (progressCounter <= 100) {
+        progressCounter += 5;                                       // Increment by 5% every interval
+        if (progressCounter <= 100) {                               // Cap at 100%
           setNotification(`Processing image... ${progressCounter}% complete. Please wait.`);
         }
-      }, 3000); // Update every 3 seconds
+      }, 3000);                                                     // Update every 3 seconds
       
-      // Send analysis request with timeout
-      const analyzeController = new AbortController();
+      // STEP 4: Send analysis request to AI backend with timeout protection
+      const analyzeController = new AbortController();              // Controller for analysis timeout
       const analyzeTimeoutId = setTimeout(() => analyzeController.abort(), 60000); // 60 second timeout
       
+      // Send the image to the analysis endpoint
       const analyzeResponse = await fetch('http://localhost:5000/analyze-damage', {
-        method: 'POST',
-        body: formData,
-        signal: analyzeController.signal,
+        method: 'POST',                                             // POST method for data submission
+        body: formData,                                             // Form data with image and location
+        signal: analyzeController.signal,                           // Connect abort controller
         headers: {
-          'X-Requested-With': 'XMLHttpRequest',
-          'Accept': 'application/json'
+          'X-Requested-With': 'XMLHttpRequest',                     // AJAX request header
+          'Accept': 'application/json'                              // Accept JSON response
         }
       });   
-      clearTimeout(analyzeTimeoutId);
-      clearInterval(progressInterval); // Clear the progress interval
+      clearTimeout(analyzeTimeoutId);                               // Clear timeout after response
+      clearInterval(progressInterval);                              // Clear progress interval
 
+      // Handle analysis errors
       if (!analyzeResponse.ok) {
-        const errorData = await analyzeResponse.json();
-        throw new Error(errorData.error || 'Image analysis failed.');
+        const errorData = await analyzeResponse.json();             // Parse error response
+        throw new Error(errorData.error || 'Image analysis failed.'); // Throw with error message
       }
       
-      const data = await analyzeResponse.json();
+      // STEP 5: Process successful analysis results
+      const data = await analyzeResponse.json();                    // Parse JSON response
       
-      // Calculate total processing time
-      const processingTime = ((performance.now() - startTime) / 1000).toFixed(1);
+      // Calculate total processing time for metrics
+      const processingTime = ((performance.now() - startTime) / 1000).toFixed(1); // Time in seconds
       console.log(`Total analysis time: ${processingTime} seconds`);
       
-      // Update state with results
+      // Update state with analysis results and processing time
       setAnalysisResult({
-        ...data,
-        clientProcessingTime: processingTime
+        ...data,                                                    // All analysis data from server
+        clientProcessingTime: processingTime                        // Add client-side timing
       });
       
       // Show success notification with processing time
       setNotification(`Analysis completed in ${processingTime} seconds! Saving results...`);
 
-      // Update location if available
+      // STEP 6: Update location data if provided in the response
       if (data.latitude && data.longitude) {
-        setLat(data.latitude);
-        setLng(data.longitude);
-        fetchAddress(data.latitude, data.longitude);
+        setLat(data.latitude);                                      // Update latitude state
+        setLng(data.longitude);                                     // Update longitude state
+        fetchAddress(data.latitude, data.longitude);                // Get address from coordinates
       }
 
-      // Save results and wait for completion
-      setSaving(true);
+      // STEP 7: Save analysis results to database
+      setSaving(true);                                              // Set saving state to true
       try {
-        await saveAnalysisResult(data);
+        await saveAnalysisResult(data);                             // Save results to database
       } catch (e) {
-        console.error("Error saving analysis result:", e);
+        console.error("Error saving analysis result:", e);          // Log save errors
         // Don't set error here as we've already analyzed the image successfully
       } finally {
-        setSaving(false);
+        setSaving(false);                                           // Reset saving state when done
       }
       
     } catch (err) {
@@ -240,116 +283,133 @@ const Upload = () => {
     }
   };
 
+  /**
+   * saveAnalysisResult - Saves the AI analysis results to the database
+   * 
+   * This function:
+   * 1. Processes severity levels and status
+   * 2. Captures the image with bounding boxes
+   * 3. Prepares and sends data to the server
+   * 
+   * @param {Object} result - The analysis result from the AI model
+   */
   const saveAnalysisResult = async (result) => {
     try {
-      // Determine status based on severity level
-      let status = 'Pending';
-      let severityLevel = result.severity?.level?.toLowerCase() || 'unknown';
+      // STEP 1: Determine status based on severity level
+      let status = 'Pending';                                       // Default status
+      let severityLevel = result.severity?.level?.toLowerCase() || 'unknown'; // Get severity from result
       
-      // Map any non-standard severity levels to valid ones
-      if (severityLevel === 'medium') {
-        severityLevel = 'moderate';
+      // Normalize severity levels for consistency
+      if (severityLevel === 'medium') {                             // Handle 'medium' as 'moderate'
+        severityLevel = 'moderate';                                 // Standardize terminology
       }
       
+      // Map severity levels to appropriate status values
       if (severityLevel === 'severe' || severityLevel === 'high') {
-        status = 'Critical';
+        status = 'Critical';                                        // High priority status
       } else if (severityLevel === 'moderate') {
-        status = 'Processed';
+        status = 'Processed';                                       // Medium priority status
       } else if (severityLevel === 'low') {
-        status = 'Resolved';
+        status = 'Resolved';                                        // Low priority status
       }
       
-      // Calculate numeric severity value for consistency with AuthorityPage
-      let severityValue = 50; // Default
+      // STEP 2: Calculate numeric severity value (0-100) for visualization
+      let severityValue = 50;                                       // Default middle value
       if (severityLevel === 'severe' || severityLevel === 'high') {
-        severityValue = 85;
+        severityValue = 85;                                         // High severity (85%)
       } else if (severityLevel === 'moderate') {
-        severityValue = 60;
+        severityValue = 60;                                         // Moderate severity (60%)
       } else if (severityLevel === 'low') {
-        severityValue = 30;
+        severityValue = 30;                                         // Low severity (30%)
       }
       
-      // Get the canvas with bounding boxes as base64 image
+      // STEP 3: Capture canvas with bounding boxes as base64 image
       let boundingBoxImage = null;
+      // Only proceed if we have a canvas reference and detections
       if (canvasRef.current && result.detections && result.detections.length > 0) {
         try {
-          // Make sure bounding boxes are drawn and wait for completion
-          const success = await drawBoundingBoxes();
+          // Draw bounding boxes on canvas and wait for completion
+          const success = await drawBoundingBoxes();                // Draw boxes on canvas
           
           if (success) {
             // Add a small delay to ensure rendering is complete
-            await new Promise(resolve => setTimeout(resolve, 100));
+            await new Promise(resolve => setTimeout(resolve, 100)); // Short delay for rendering
             
-            // Convert canvas to base64 with reduced quality to decrease payload size
-            boundingBoxImage = canvasRef.current.toDataURL('image/jpeg', 0.7);
+            // Convert canvas to base64 with reduced quality for smaller payload
+            boundingBoxImage = canvasRef.current.toDataURL('image/jpeg', 0.7); // 70% quality
             console.log("Bounding box image captured from canvas successfully");
           } else {
             console.warn("Bounding boxes were not drawn successfully, skipping canvas capture");
           }
         } catch (e) {
-          console.error("Error capturing canvas image:", e);
+          console.error("Error capturing canvas image:", e);        // Log any errors
         }
       } else {
         console.warn("Cannot capture bounding box image - missing canvas, detections, or no detections found");
       }
       
+      // STEP 4: Prepare data for saving to the database
       console.log("Preparing to save analysis result...");
       
-      // Create the request body
+      // Create the request body with all necessary data
       const requestBody = {
-        imagePath,
-        latitude: lat,
-        longitude: lng,
+        imagePath,                                                  // Path to original image
+        latitude: lat,                                              // Latitude coordinate
+        longitude: lng,                                             // Longitude coordinate
         // Only include essential parts of the analysis result to reduce payload size
         analysisResult: {
-          detections: result.detections,
-          severity: result.severity,
-          processing_time: result.processing_time,
-          vit_predictions: result.vit_predictions,
-          clientProcessingTime: result.clientProcessingTime
+          detections: result.detections,                            // Damage detections with bounding boxes
+          severity: result.severity,                                // Severity assessment
+          processing_time: result.processing_time,                  // Server processing time
+          vit_predictions: result.vit_predictions,                  // Vision Transformer predictions
+          clientProcessingTime: result.clientProcessingTime         // Client-side processing time
         },
-        address: address,
-        status: status,
-        severity: severityValue,
-        severityLevel: severityLevel,
-        userId: userId, // Ensure user ID is included
-        timestamp: new Date().toISOString(),
-        boundingBoxImage // Include the base64 image with bounding boxes
+        address: address,                                           // Human-readable location
+        status: status,                                             // Processing status
+        severity: severityValue,                                    // Numeric severity (0-100)
+        severityLevel: severityLevel,                               // Text severity level
+        userId: userId,                                             // User ID for attribution
+        timestamp: new Date().toISOString(),                        // Current timestamp
+        boundingBoxImage                                            // Base64 image with bounding boxes
       };
       
-      // Log the size of the request to help with debugging
+      // STEP 5: Check request size to prevent payload issues
+      // Calculate request size in megabytes
       const requestSize = JSON.stringify(requestBody).length / (1024 * 1024);
-      console.log(`Request size: ${requestSize.toFixed(2)} MB`);
+      console.log(`Request size: ${requestSize.toFixed(2)} MB`);    // Log size for debugging
       
-      // If the request is too large, show a warning
+      // Show warning for very large requests that might timeout
       if (requestSize > 40) {
         console.warn("Warning: Request size is very large and may cause issues");
         setNotification("Warning: Image is very large. Processing may take longer.");
       }
       
+      // STEP 6: Send data to server for storage
       const saveResponse = await fetch('http://localhost:5000/save-canvas', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(requestBody),
+        method: 'POST',                                             // POST method for data submission
+        headers: { 'Content-Type': 'application/json' },            // JSON content type
+        body: JSON.stringify(requestBody),                          // Serialize request body
       });
       
+      // STEP 7: Validate response format
       // Check for non-JSON responses (like HTML error pages)
       const contentType = saveResponse.headers.get("content-type");
       if (!contentType || !contentType.includes("application/json")) {
         throw new Error(`Server returned non-JSON response: ${await saveResponse.text()}`);
       }
 
+      // STEP 8: Handle error responses from server
       if (!saveResponse.ok) {
         // Try to parse error as JSON, but handle non-JSON responses too
-        let errorMessage = 'Failed to save analysis result.';
+        let errorMessage = 'Failed to save analysis result.';       // Default error message
         try {
-          const errorData = await saveResponse.json();
-          errorMessage = errorData.message || errorMessage;
+          const errorData = await saveResponse.json();              // Try to parse JSON error
+          errorMessage = errorData.message || errorMessage;         // Use server error message if available
         } catch (e) {
-          // If we can't parse JSON, try to get the text
+          // If we can't parse JSON, try to get the text response
           try {
-            const errorText = await saveResponse.text();
-            errorMessage = errorText || errorMessage;
+            const errorText = await saveResponse.text();            // Get raw text response
+            errorMessage = errorText || errorMessage;               // Use text if available
           } catch (textError) {
             console.error("Could not parse error response:", textError);
           }
@@ -357,88 +417,98 @@ const Upload = () => {
         throw new Error(`Server error (${saveResponse.status}): ${errorMessage}`);
       }
       
-      const responseData = await saveResponse.json();
-      console.log("Save response:", responseData);
+      // STEP 9: Process successful response
+      const responseData = await saveResponse.json();               // Parse JSON response
+      console.log("Save response:", responseData);                  // Log full response
       console.log(`Analysis saved with status: ${status}, severity: ${severityLevel} (${severityValue}%)`);
       
+      // Log path to saved bounding box image if available
       if (responseData.boundingBoxImagePath) {
         console.log(`Bounding box image saved at: ${responseData.boundingBoxImagePath}`);
       }
       
-      // Show success notification with more details
+      // STEP 10: Show success notification with result details
       const detectionCount = responseData.detectionCount || result.detections?.length || 0;
       const severityText = responseData.severity || severityLevel;
       setNotification(
         `Analysis saved successfully! Found ${detectionCount} damage detections with ${severityText} severity.`
       );
     } catch (error) {
-      console.error("Error saving analysis:", error);
-      setError(error.message || 'Failed to save the analysis result.');
-      setNotification(null); // Clear any existing notification
+      // STEP 11: Handle any errors in the save process
+      console.error("Error saving analysis:", error);               // Log detailed error
+      setError(error.message || 'Failed to save the analysis result.'); // Set error state
+      setNotification(null);                                        // Clear any existing notification
       
-      // Show a more user-friendly error message
+      // Provide user-friendly error messages for common issues
       if (error.message.includes("413") || error.message.includes("Payload Too Large")) {
         setError("The image is too large to upload. Please try a smaller image or reduce the quality.");
       }
     }
   };
 
+  /**
+   * drawBoundingBoxes - Visualizes AI detections by drawing bounding boxes on canvas
+   * 
+   * This function:
+   * 1. Loads the analyzed image onto a canvas
+   * 2. Draws colored bounding boxes around detected damage without labels
+   * 
+   * @returns {Promise<boolean>} - Resolves to true if drawing was successful
+   */
   const drawBoundingBoxes = () => {
     return new Promise((resolve, reject) => {
+      // Validate required elements are available
       if (!analysisResult?.detections || !canvasRef.current || !previewUrl) {
         console.warn("Missing required elements for drawing bounding boxes");
-        resolve(false);
+        resolve(false);                                             // Resolve with false if missing elements
         return;
       }
 
-      const canvas = canvasRef.current;
-      const ctx = canvas.getContext('2d');
-      const img = new Image();
-      img.crossOrigin = 'anonymous';
+      // Get canvas references and create image object
+      const canvas = canvasRef.current;                             // Get canvas DOM element
+      const ctx = canvas.getContext('2d');                          // Get 2D drawing context
+      const img = new Image();                                      // Create new image object
+      img.crossOrigin = 'anonymous';                                // Allow cross-origin image loading
       
       // Set a timeout to handle cases where the image might hang
       const timeoutId = setTimeout(() => {
         console.warn("Image loading timeout for bounding boxes");
-        resolve(false);
-      }, 5000); // 5 second timeout
+        resolve(false);                                             // Resolve with false on timeout
+      }, 5000);                                                     // 5 second timeout
       
-      // Set up event handlers before setting src
+      // Define image load handler
       img.onload = () => {
-        clearTimeout(timeoutId);
+        clearTimeout(timeoutId);                                    // Clear timeout when image loads
         try {
+          // STEP 1: Prepare canvas with the base image
           // Set canvas dimensions to match the image
-          canvas.width = img.width;
-          canvas.height = img.height;
+          canvas.width = img.width;                                 // Match canvas width to image
+          canvas.height = img.height;                               // Match canvas height to image
           
           // Clear canvas and draw the image
-          ctx.clearRect(0, 0, canvas.width, canvas.height);
-          ctx.drawImage(img, 0, 0);
+          ctx.clearRect(0, 0, canvas.width, canvas.height);         // Clear any previous content
+          ctx.drawImage(img, 0, 0);                                 // Draw the image on canvas
 
-          // Draw each bounding box with color based on damage type
+          // STEP 2: Draw bounding boxes for each detection
           analysisResult.detections.forEach(({ bbox, class: className, color }) => {
-            const [x, y, width, height] = bbox;
+            // Extract coordinates from bounding box
+            const [x, y, width, height] = bbox;                     // Destructure bbox coordinates
             
+            // Set color based on damage type
             // Use the color from the detection if available, otherwise use red
             ctx.strokeStyle = color ? `rgb(${color[0]}, ${color[1]}, ${color[2]})` : 'red';
-            ctx.lineWidth = 3;
-            ctx.strokeRect(x, y, width, height);
+            ctx.lineWidth = 3;                                      // Set line thickness
+            ctx.strokeRect(x, y, width, height);                    // Draw rectangle around damage
             
-            // Add label if class name is available
-            if (className) {
-              ctx.fillStyle = 'rgba(0, 0, 0, 0.7)';
-              const textWidth = ctx.measureText(className).width;
-              ctx.fillRect(x, y - 20, textWidth + 10, 20);
-              ctx.fillStyle = 'white';
-              ctx.font = '14px Arial';
-              ctx.fillText(className, x + 5, y - 5);
-            }
+            // STEP 3: Labels removed as requested
+            // No labels will be drawn on the bounding boxes
           });
           
           console.log(`Drew ${analysisResult.detections.length} bounding boxes on canvas`);
-          resolve(true);
+          resolve(true);                                            // Resolve with success
         } catch (err) {
-          console.error("Error drawing bounding boxes:", err);
-          resolve(false); // Resolve with false instead of rejecting
+          console.error("Error drawing bounding boxes:", err);      // Log any errors
+          resolve(false);                                           // Resolve with false instead of rejecting
         }
       };
 
@@ -678,7 +748,11 @@ const Upload = () => {
                     <Marker position={[lat, lng]} icon={createCustomIcon(getMarkerColor(analysisResult?.severity?.level))}>
                       <Popup>
                         <div className="text-sm p-1">
-                          <p className="font-medium text-gray-800">{address}</p>
+                          <p className="font-medium text-gray-800">
+                            {address === 'Fetching...' 
+                              ? 'Fetching address...' 
+                              : address || `Location: ${lat?.toFixed(6)}, ${lng?.toFixed(6)}`}
+                          </p>
                           <p className="text-gray-600 mt-1 flex items-center gap-1">
                             <span className={`inline-block w-2 h-2 rounded-full ${
                               ['high', 'severe'].includes((analysisResult?.severity?.level || '').toLowerCase())
@@ -721,7 +795,11 @@ const Upload = () => {
                           </div>
                           <div>
                             <p className="text-sm font-medium text-gray-800">Address</p>
-                            <p className="text-sm text-gray-600">{address}</p>
+                            <p className="text-sm text-gray-600">
+                              {address === 'Fetching...' 
+                                ? 'Fetching address...' 
+                                : address || `Location: ${lat?.toFixed(6)}, ${lng?.toFixed(6)}`}
+                            </p>
                           </div>
                         </div>
                         <div className="flex items-start gap-3">
