@@ -125,7 +125,7 @@ INSPECTIFy is built to assist municipalities and road maintenance teams in ident
 ##  Deployment
 
 - 🌐 **Live Site:** [safestreet-road-damage-detection-system.onrender.com](https://safestreet-road-damage-detection-system.onrender.com/)
-- 💻 **GitHub Repository:** [View Source Code](https://github.com/venkatmadhu21/SafeStreet---Road-Damage-Detection-System)
+- 💻 **GitHub Repository:** [View Source Code](https://github.com/SathvikSagar/Inspectify)
 
 ---
 
