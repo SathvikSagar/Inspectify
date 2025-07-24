@@ -131,7 +131,7 @@ INSPECTIFy is built to assist municipalities and road maintenance teams in ident
 
 ## 👨‍💻 Developed By
 
-Team from **Keshav Memorial Institute of Technology**:
+Team from **Keshav Memorial College Of Engineering**:
 - Venkat Madhu Mohan  
 - Satvik Sagar  
 - Shivanandan  
