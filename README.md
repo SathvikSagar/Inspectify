@@ -133,7 +133,7 @@ INSPECTIFy is built to assist municipalities and road maintenance teams in ident
 
 Team from **Keshav Memorial College Of Engineering**:
 - Venkat Madhu Mohan  
-- Satvik Sagar  
+- Sathvik Sagar  
 - Shivanandan  
 - Rushika Anumula  
 - Shanti Sri Parimi
